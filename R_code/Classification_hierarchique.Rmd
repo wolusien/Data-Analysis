@@ -1,0 +1,112 @@
+---
+title: 'TP4: Classification hiérarchique'
+author: "DJEBALI Wissam"
+date: "3 mars 2018"
+output:
+  pdf_document: default
+header-includes:
+- \usepackage[french]{babel}
+- \usepackage[utf8]{inputenc}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(factoextra)
+library(DEoptimR)
+library(viridisLite)
+library(cluster)
+library(NbClust)
+```
+
+## Classification hiérarchique
+
+**packges R** : factoextra, cluster, NbClust
+
+
+L'algorithme de segmentation hiérarchique ascendante est disponible au travers de la fonction hclust() de R. 
+
+**Elle s'applique non pas à un jeu de données, mais à une matrice de distance.** 
+On peut facilement obtenir cette matrice pour un data frame à l'aide de la fonction dist() qui calcule la distance euclidienne entre chaque paire de données du data frame.
+
+###Classification hiérarchique ascendante ou Agglomerative clustering=AGNES (Agglomerative Nesting)
+
+**Principe** : Chaque individu est initialement considéré comme un groupe (feuille de l'arbre). À chaque étape de l'algorithme, les 2 groupes les plus similaires sont combinés dans un nouveau groupe(noeud de l'arbre). Cette procédure est répétée jusqu'à ce que tous les individus fasse partie du même groupe. Opposé à la méthode de **Classification hiérarchique descendante ou Divisive clustering =DIANA (Divise Analysis)**, qui elle part d'un groupe et fait l'inverse.
+
+**AGNES** *est une bonne méthode pour identifier un petit nombre de groupes*.
+
+```{r}
+# Préparation des données
+ir <-scale(iris[, -5])
+
+head(ir)
+
+# Pour décider de la similarité entre deux groupes, on utilise différentes distances
+
+# Calcul de la distance euclidienne entre chaque paire
+res.dist <- dist(ir, method = "euclidean")
+
+# Affichage des distances entre les individus
+as.matrix(res.dist)[1:6, 1:6]
+
+# Résultats de la classification hiérarchique
+hc <- hclust(res.dist, method = "complete")
+
+# Visualisation de hclust
+#plot(hc, labels = FALSE, hang = -1)
+fviz_dend(hc, cex = 0.5)
+
+# Détermination du nombre de groupes : Méthode de Elbow
+fviz_nbclust(ir, hcut, method = "wss")+ geom_vline(xintercept = 3, linetype = 2)
+# On peut voir que le meilleur choix du nb de grp est 3
+
+# Visualisation de hclust
+plot(hc, labels = FALSE, hang = -1)
+# Add rectangle around 3 groups
+rect.hclust(hc, k = 3, border = 2:4) 
+
+# Calcul de la distance cophentic
+res.coph <- cophenetic(hc)
+# Correlation entre la distance cophenetic et distance euclidienne
+cor(res.dist, res.coph)
+# Plus la corrélation est proche de 1 plus le choix découpage en groupe des individus est précis
+# À partir de 0.75 on juge en général qu'un découpage est précis
+
+# Découpe de l'arbre en 3 groupes
+grp<-cutree(hc, 3)
+
+# Tableau d'effectif des groupes
+table(grp,iris[,5])
+
+# Découpage en 3 groupes et coloration par groupes
+fviz_dend(hc, k = 3, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("blue", "red", "green"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+
+# Visualisation des individus en fonction de leur groupe
+fviz_cluster(list(data = ir, cluster = grp),
+             palette = c("blue", "red", "green"), 
+             ellipse.type = "convex", # Concentration ellipse
+             repel = TRUE, # Avoid label overplotting (slow)
+             show.clust.cent = FALSE, ggtheme = theme_minimal())
+
+```
+
+
+###Classification hiérarchique descendante ou Divisive clustering=DIANA (Divise Analysis)
+
+```{r}
+library("cluster")
+res.diana <- diana(x = ir, # data matrix
+                   stand = TRUE, # standardize the data
+                   metric = "euclidean" # metric for distance matrix
+                   )
+
+# Visualisation de l'arbre ou dendogramme
+fviz_dend(res.diana, cex = 0.6, k = 3)
+```
+

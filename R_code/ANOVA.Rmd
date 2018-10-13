@@ -1,0 +1,181 @@
+---
+title: 'TP3 : modèle ANOVA'
+author: "DJEBALI Wissam"
+date: "1 mars 2018"
+output:
+  pdf_document: default
+  word_document: default
+header-includes: 
+ - \usepackage[french]{babel}
+ - \usepackage[utf8]{inputenc}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+```
+
+## Modèle ANOVA : Régression linéaire avec variables qualitatives
+
+**Packages R** : MASS
+
+<!--https://perso.univ-rennes1.fr/valerie.monbet/ExposesM2/2013/anova.pdf-->
+L'analyse de la variance, c'est la régression quand les variables prédictives sont qualitatives plus précisément, il s'agit des tests qu'on effectue dans ce cadre.
+
+L'analyse de la covariance, c'est la régression quand certaines des variables prédictives sont qualitatives et d'autres quantitatives (on appelle alors ces dernières covariables).
+
+La manière la plus simple de voir l'analyse de la variance, c'est comme une généralisation du test de Student : elle permet de voir si la moyenne d'une variable quantitative est la même dans différents groupes ou, en d'autres termes, si une variable quantitative dépend d'une variable qualitative.
+
+Une manière plus générale de voir l'analyse de la variance (et c'est le point de vue adopté par la commande "anova" sous R), c'est comme un test comparant plusieurs modèles.
+
+L'ANOVA s'applique dès que :
+
+_ on veut monter une expérimentation
+
+_ on veut montrer l'effet de variables qualitatives sur une variable quantitative
+
+###ANOVA à un facteur (One way ANOVA)
+
+Ici on va étudier les données bee.
+
+Les groupes seront données par les différentes modalités de traitement:
+
+- groupe traitement A
+
+- groupe traitement B
+
+- groupe traitement C
+
+- groupe traitement D
+
+- groupe traitement E
+
+- groupe traitement F
+
+- groupe traitement G
+
+- groupe traitement H
+
+
+```{r}
+bee<-data.frame(OrchardSprays)
+bee<-bee[,c(1,4)]
+
+# Visualisation des donées bee
+# bee$treatment est une variable qualitative en facteur
+plot(bee)
+
+# On transfrome la variable treatment en variable auantitative
+bee2<-bee
+bee2$treatment<-as.numeric(bee2$treatment)
+# Visualisation des donées bee
+# bee$treatment est une variable quantitative en numérique maintenant
+plot(bee2)
+
+```
+
+
+Le changement d'interprétation de la variable treatment en variable numérique n'a rien changé au lien entre les variables, donc autant garder la variable en facteur
+
+On a toujours un lien linéaire entre decrease et treatment, vu lorque la variable treatment était sous forme de facteur.
+
+
+####Etude de la moyenne des groupes(différentes modalités de bee$treatment)
+
+```{r}
+reg<-lm(bee$decrease~bee$treatment)
+summary(reg)
+
+# Anova sur la régression linéaire
+anov<-anova(reg)
+anov
+```
+
+Lors de l'analyse des moyennes, on a que la p-value est faible (<0.05) donc on rejète $H_{0}=$*"les moyennes des groupes sont égales"*, donc la variable *treatment* a bien une influence sur la variable *decrease*.
+
+#####Test des moyennes deux à deux
+
+```{r}
+# 5) Test deux à deux
+A<-bee[which(bee$treatment=="A"),]
+B<-bee[which(bee$treatment=="B"),]
+C<-bee[which(bee$treatment=="C"),]
+D<-bee[which(bee$treatment=="D"),]
+
+# A contre B
+t.test(A$decrease-B$decrease)
+# La p-value est supérieur à 0.05 donc on ne rejète pas 
+# H0 = A et B ont leur moyenne proche
+```
+
+
+
+####Etude de la variance des groupes(différentes modalités de bee$treatment)
+
+```{r}
+# Test de barlett ou Test d'homogénéité
+bartlett.test(bee$decrease~bee$treatment)
+# Le Test de Barlett n'est pas très robuste si les données ne sont pas de loi normale, mieux vaut utiliser le test de Levene ou de BrownForsythe
+```
+
+Lors de l'analyse des variances, on a que la p-value est faible on rejète $H_{0}=$*les variances de chaque groupe sont homogènes*
+
+###ANOVA à facteurs multiples
+
+Ici on va étudier les données crabs, on va étudier la variable body depth _BD_ en fonction du facteur sex _Sex_ et espèce _Sp_
+
+```{r}
+crab<-crabs
+
+plot(crab)
+```
+
+#### Préquel : Analyse ANOVA à un facteur avec les différentes variables qualitatives
+
+```{r}
+
+# Espèce
+reg_sp<-lm(crab$BD~crab$sp)
+summary(reg_sp)
+# L'espèce O influe le plus sur la variable BD, contrairement à l'espèce B
+
+anov_sp<-anova(reg_sp)
+anov_sp
+# on a que la p-value est faible (<0.05) donc on rejète H0=les moyennes de groupes sont égales. Donc l'espèce influe bien sur la variable BD
+
+
+# Sex
+reg_sex<-lm(crab$BD~crab$sex)
+summary(reg_sex)
+# Le sexe M influe le plus sur la variable BD, contrairement au sexe F
+
+anov_sex<-anova(reg_sex)
+anov_sex
+# On a que la p-value est est de 0.20 (>0.05) donc on ne rejète pas H0=les moyennes des groupes sont égales. Donc le sex n'influe pas sur la variable BD
+```
+
+La **p value (Pr(>F))** de *anov_sp* est faible <0.05 alors que la **p value (Pr(>F))** de *anov_sex* est > 0.05. 
+
+On a donc l'impression que seul l'espèce influe sur la var BD.
+
+
+
+#### ANOVA à deux facteurs
+```{r}
+reg_crab<-lm(BD~sex+sp+sex:sp,data=crab)
+summary(reg_crab)
+
+anov_crab<-anova(reg_crab)
+anov_crab
+```
+
+La **p-value (Pr(>F))** de l'intéraction des variables sex et sp est <0.05 _*(sex:sp  0.03547)*_. 
+
+Donc on rejète $H_{0}=$*"les moyennes des groupes sont égales"*, 
+donc l'intéraction des variables qualitatives *sex* et *sp* a bien une influence sur la variable *BD*. 
+
+D'où la variable sex a bien aussi une influence sur la variable *BD*, même si celle-ci est légère, chose que l'on ne pouvait pas voir précédemment.
+
+

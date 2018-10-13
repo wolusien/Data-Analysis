@@ -1,0 +1,227 @@
+---
+title: 'TP6: Classification non supervisée sur modèles de mélanges : Algorithme
+  EM et CEM'
+author: "DJEBALI Wissam"
+date: "3 mars 2018"
+output:
+  pdf_document: default
+header-includes: 
+ - \usepackage[french]{babel}
+ - \usepackage[utf8]{inputenc}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Rcpp)
+library(Rmixmod)
+library(mclust)
+```
+
+## Algorithme EM : Expectation-Maximisation (Maximum de Vraisemblance)
+
+**Packages R** : Rcpp, Rmixmod
+
+<!--  Data_Mining_Method/algo-em.pdf -->
+
+Lorsque les seules données dont on dispose ne permettent pas l’estimation des paramètres,
+et/ou que l’expression de la vraisemblance est analytiquement impossible à maximiser, l’algorithme
+EM peut être une solution tous comme une façon d’estimer les données cachées ou manquantes.
+
+
+L’algorithme EM tire son nom du fait qu’à chaque itération il opère deux étapes distinctes :
+
+— la phase « Expectation », souvent désignée comme « l’étape E », procède comme son nom le laisse supposer à l’estimation des données inconnues, sachant les données observées
+et la valeur des paramètres déterminée à l’itération précédente ;
+
+— la phase « Maximisation », ou « étape M », procède donc à la maximisation de la vraisemblance,
+rendue désormais possible en utilisant l’estimation des données inconnues effectuée à l’étape précédente, et met à jour la valeur du ou des paramètre(s) pour la
+prochaine itération.
+
+
+
+**L’algorithme EM avec notations**
+
+
+L’algorithme EM vise à maximiser la vraisemblance du mélange dans un contexte non
+supervisé.
+
+1) Déterminer une situation initiale  
+2) **Estimation** des probabilités conditionnelles (probabilités a posteriori) $$t_{ik}=\frac{p_{k}\phi_{k}(x_{i};\alpha_{k})}{\sum_{l=1}^{s}p_{l}\phi_{l}(x_{i};\alpha_{l})}$$ que $x_{i}$  
+3) **Maximisation** : calcul des paramètres du mélange $$p_{k}=\frac{\sum_{i=1}^{n}t_{ik}}{n}$$ $$\alpha_{k}=\text{dépendant du modèle}$$  
+4) Itérer les étapes 2 et 3, jusqu'à la convergence (évolution très faible de $L$)
+
+En bref, l’algorithme EM procède selon un mécanisme extrêmement naturel : s’il existe
+un obstacle pour appliquer la méthode MV, on fait simplement sauter cet obstacle puis on
+applique effectivement cette méthode.
+
+
+```{r}
+data("geyser")
+gey<-geyser
+
+# Plusieurs modèles et plusieurs critères
+modu <- mixmodCluster(gey,nbCluster=2:5,criterion=c("ICL","BIC"),
+                          strategy=mixmodStrategy('EM'), models=mixmodGaussianModel())
+modu
+# mixmodCluster affiche par défaut en premier le résultat de ICL car 
+# il apparait en premier dans le vecteur
+
+# Résumé des résultats
+summary(modu)
+
+# Classification des individus
+modu['partition']
+
+# Visualisation de la densité et de la répartition des observations
+plot(modu)
+
+############################## # Données IRIS # ######################################
+
+iris.mixmod = mixmodCluster(iris[-5], nbCluster = 1:9, model = mixmodGaussianModel())
+
+summary(iris.mixmod)
+
+# Densité par classe
+histCluster(iris.mixmod["bestResult"], iris[-5])
+
+# Classification
+plot(iris.mixmod)
+
+
+# Classification selon les variables Sepal.Length et Sepal.Width 
+plotCluster(iris.mixmod["bestResult"], iris[-5], variable1 = 1, variable2 = 2)
+
+# Classification selon les variables Petal.Length et Petal.Width 
+plotCluster(iris.mixmod["bestResult"], iris[-5], variable1 = 3, variable2 = 4)
+######################### # Autre jeu de données avec utilisation mclust # ###########
+
+plot(faithful)
+
+
+faithful.mclust = Mclust(faithful)
+
+summary(faithful.mclust)
+
+plot(faithful.mclust, what = "classification")
+
+plot(faithful.mclust, what = "uncertainty")
+
+```
+
+On un mélange composé de 5 gaussiennes différentes pour le graphe selon la première variable Duration.  
+
+On un mélange composé de 5 gaussiennes différentes pour le graphe selon la seconde variable Waiting.Time.
+
+
+
+Il existe plusieurs modèles de mélanges, que se soient pour les mélanges gaussiens ou autres, dont certain ont beaucoup de paramètres libres donc sont plus flexibles mais complexes.  
+Comment choisir le bon modèle à utiliser?
+
+###Critère BIC(Bayesian Information Criterion)
+Le modèle $m$ et le paramètre $\theta$ sont considérés comme des variables aléatoires.  
+On introduit $\Pi(\theta_m)$ loi a priori sur $\theta_m$  
+$p(m)$ probabilité a priori d'un modèle m ($\simeq$ *poids que l'on veut attribuer à un moèle m*)  
+On va chercher le modèle le plus vraisemblable, qui maximise:  
+$$p(m|x)=\frac{f(x|m)p(m)}{f(x)}$$
+où $x$ les observations  
+  $p(m)=\frac{1}{|\mathcal{M}|}$ avec $\mathcal{M}$ collection de modèles  
+  $f(x)$ la densité des observations, elle ne dépends pas du modèle m  
+  
+On veut donc maximiser la densité conditionnelle $f(x|m)$ aussi appelé **la vraisemblance intégrée** : $$f(x|m)=\int f(x|\theta_m)\Pi(\theta_m)d\theta_m$$
+sous certaines conditions : $\ln(f(x|m))\simeq \ln(f(x|\hat{\theta}_m))-\frac{\upsilon_n}{2}\ln(n)$ où $\hat{\theta}_m=argmax_{[\theta_{m}]}f(x|\theta_{m})$ et $\upsilon_n$ nombre de paramètres  
+on doit alors minimiser $BIC(m)=-2\ln(f(x|\hat\theta_{m}))\Pi(\theta_{m})d\theta_{m}$  
+
+Pour résumé, on veut miniimiser le critère d'information $$BIC(m)=-2\ln(L_{[m,\theta_{m}]})+k\ln(N)$$
+où $L_{[m,\theta_{m}]}$ est la vraisemblance du modèle à estimée, N le nombre d'observations dans l'échantillon et $k$ le nombre de paramètres libres du modèle.  
+
+Le modèle M choisi sera tel que $BIC(M)=argmin_{[m\in\mathcal{M}]}(BIC(m))$
+
+L'avantage de ce critère est un bon comportement pour le choix du modèle.  
+Néanmoins, le nombre de classes peut être surrestimées(on aura des classes imbriquées). 
+
+```{r}
+# Plusieurs modèles et critère BIC
+modu_BIC <- mixmodCluster(gey,nbCluster=2:5,criterion="BIC",
+                          strategy=mixmodStrategy('EM'), models=mixmodGaussianModel())
+modu_BIC
+
+# Résumé des résultats
+summary(modu_BIC)
+
+# Classification des individus
+modu_BIC['partition']
+
+# Tri de la classification de mélange modu selon le critère BIC
+tri_bic<-sortByCriterion(modu,"BIC")
+plot(tri_bic)
+
+
+# Avec les données faithful
+
+summary(faithful.mclust$BIC)
+
+plot(faithful.mclust, what = "BIC")
+```
+
+
+###Critère ICL(Integrated Completed Likelihood)
+
+Pour remédier au défaut du critère BIC qui peut engendré des classes imbriquées du faite de la surrestimation, on utilise le critère ICL.  
+ICL est le critère BIC pénalisé par un terme d'entropie qui vise à prendre en compte l'imbrication des classes.
+$$ICL(m)=BIC(m)-2\sum_{i=1}^{n}\sum_{k=1}^{n}\hat{z}_{ik}\ln(t_{ik}(\hat{\theta}_{m}))$$
+où $entropie=2\sum_{i=1}^{n}\sum_{k=1}^{n}\hat{z}_{ik}\ln(t_{ik}(\hat{\theta}_{m}))$ : *pénalité dépendant des données, d'autant plus grande que les classes sont imbriquées*.  
+et pour n assez grand  $\hat{z}_{ik}$ est défini par $\hat{z}_{ik}=1$ si $k=argmax_{[l]}(t_{il}(\hat{\theta}_{m}))$ et 0 sinon
+
+
+```{r}
+# Plusieurs modèles et critère ICL
+modu_ICL <- mixmodCluster(gey,nbCluster=2:5,criterion="BIC",
+                          strategy=mixmodStrategy('EM'), models=mixmodGaussianModel())
+modu_ICL
+
+# Résumé des résultats
+summary(modu_ICL)
+
+# Classification des individus
+modu_ICL['partition']
+
+# Tri de la classification de mélange modu selon le critère BIC
+tri_icl<-sortByCriterion(modu,"ICL")
+plot(tri_icl)
+
+
+# Avec les données faithful
+
+faithful.mclustICL = mclustICL(faithful)
+summary(faithful.mclustICL)
+
+plot(faithful.mclustICL)
+
+```
+
+## Algorithme CEM : Classification EM
+
+Ajout d'une étape de classification dans **EM**  
+1) Déterminer une situation initiale  
+2) **Estimation** des probabilités a posteriori $t_{ik}$ (identique)  
+3) **Classification** des individus avec la méthode du MAP $$z_{k}=\{i|t_{ik}=max_{[l=1, . . ., s ]}t_{il}\}$$  
+4) **Maximisation** : calcul des paramètres du mélange $$p_{k}=\frac{Card(z_{k})}{n}$$ $$a_{k}=\text{dépendant du modèle}$$  
+5) Itérer les étapes 2 à 4, jusqu'à la convergence (évolution très faible de $L_{c}$)
+
+
+```{r}
+# Comparaison entre EM et CEM
+iris.EM = mixmodCluster(iris[-5], 3, strategy = mixmodStrategy("EM", 20, "random"))
+
+plot(iris.EM)
+
+iris.CEM = mixmodCluster(iris[-5], 3, strategy = mixmodStrategy("CEM", 20, "random"))
+
+plot(iris.CEM)
+```
+
+
+
+

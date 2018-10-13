@@ -1,0 +1,303 @@
+---
+title: 'TP1 : ACP'
+author: "DJEBALI Wissam"
+date: "25 février 2018"
+output:
+  pdf_document: default
+  word_document:
+    highlight: tango
+header-includes:
+   - \usepackage[utf8]{inputenc}
+editor_options:
+  chunk_output_type: console
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("alr3")
+library("FactoMineR")
+library("factoextra")
+library("corrplot")
+```
+
+# ACP
+
+**Packages R** : FactoMineR, factoextra, corrplot
+
+En résumé, l’analyse en composantes principales permet:
+
+_ d’identifier des “profils cachés” dans un jeu de données,
+
+_ de réduire les dimensions des données en enlevant la redondance des données,
+
+_ d’identifier les variables corrélées
+
+```{r}
+data(BigMac2003)
+mcdo<-BigMac2003
+
+# Visualisation des données
+head(mcdo)
+
+```
+
+##Standardisation des données
+
+Dans l’analyse en composantes principales, les variables sont souvent normalisées. 
+Ceci est particulièrement recommandé lorsque les variables sont mesurées dans différentes unités (par exemple: kilogrammes, kilomètres, centimètres, …); sinon, le résultat de l’ACP obtenue sera fortement affecté.
+
+L’objectif est de rendre les variables comparables. Généralement, les variables sont normalisées de manière à ce qu’elles aient au final i) un écart type égal à un et ii) une moyenne égale à zéro.
+
+Techniquement, l’approche consiste à transformer les données en soustrayant à chaque valeur une valeur de référence (la moyenne de la variable) et en la divisant par l’écart type. A l’issue de cette transformation les données obtenues sont dites données centrées-réduites. L’ACP appliquée à ces données transformées est appelée ACP normée.
+
+La standardisation des données est une approche beaucoup utilisée dans le contexte de l’analyse des données d’expression de gènes avant les analyses de type PCA et de clustering.
+
+Lors de la normalisation des variables, les données peuvent être transformées comme suit: $\frac{x_{i}-mean(x)}{sd(x)}$ Où $mean(x)$ est la moyenne des valeurs de x, et $sd(x)$ est l’écart type (SD).
+
+La fonction scale() peut être utilisée pour normaliser les données.
+
+##Calculer l’ACP sur les individus/variables actifs avec PCA()
+PCA(X, scale.unit = TRUE, ncp = 5, graph = TRUE)
+
+_X: jeu de données de type data frame. Les lignes sont des individus et les colonnes sont des variables numériques
+
+_scale.unit: une valeur logique. Si TRUE, les données sont standardisées/normalisées avant l’analyse.
+
+_ncp: nombre de dimensions conservées dans les résultats finaux.
+
+_graph: une valeur logique. Si TRUE un graphique est affiché.
+
+```{r}
+res.pca <- PCA(mcdo, graph = FALSE)
+# les variables sont normalisés et centrées
+
+# Résultats de PCA()
+print(res.pca)
+```
+
+###Valeurs propres / Variances
+
+Les valeurs propres (eigenvalues en anglais) mesurent la quantité de variance expliquée par chaque axe principal. Les valeurs propres sont grandes pour les premiers axes et petits pour les axes suivants. Autrement dit, les premiers axes correspondent aux directions portant la quantité maximale de variation contenue dans le jeu de données.
+
+Nous examinons les valeurs propres pour déterminer le nombre de composantes principales à prendre en considération. Les valeurs propres et la proportion de variances (i.e. information) retenues par les composantes principales peuvent être extraites à l’aide de la fonction get_eigenvalue() [package factoextra].
+
+```{r}
+eig.val <- get_eigenvalue(res.pca)
+eig.val
+```
+
+La proportion de variance expliquée par chaque valeur propre est donnée dans la deuxième colonne. Le pourcentage cumulé expliqué est obtenu en ajoutant les proportions successives de variances expliquées. 
+
+Les valeurs propres peuvent être utilisées pour déterminer le nombre d’axes principaux à conserver après l’ACP (Kaiser 1961):
+
+Une valeur propre > 1 indique que la composante principale (PC) concernée représente plus de variance par rapport à une seule variable d’origine, lorsque les données sont standardisées. Ceci est généralement utilisé comme seuil à partir duquel les PC sont conservés. A noter que cela ne s’applique que lorsque les données sont normalisées.
+
+Vous pouvez également limiter le nombre d’axes à un nombre qui représente une certaine fraction de la variance totale. Par exemple, si vous êtes satisfaits avec 70% de la variance totale expliquée, utilisez le nombre d’axes pour y parvenir.
+
+```{r}
+# Déterminer le nb de composantes principales(=le nb d'axes)
+fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
+```
+Du graphique ci-dessus, nous pourrions vouloir nous arrêter à la 5e composante principale. 88% des informations (variances) contenues dans les données sont conservées par les cinq premières composantes principales.
+
+
+###Graphique des variables
+
+####Résultats pour les variables
+
+Les résultats pour les variables actives (coordonnées, corrélation entre variables et les axes, cosinus-carré et contributions)
+```{r}
+var <- get_pca_var(res.pca)
+var
+
+# Coordonnées
+head(var$coord)
+# Cos2: qualité de répresentation
+head(var$cos2)
+# Contributions aux composantes principales
+head(var$contrib)
+```
+
+####Cercle de corrélation
+
+La corrélation entre une variable et une composante principale (PC) est utilisée comme coordonnées de la variable sur la composante principale. La représentation des variables diffère de celle des observations: les observations sont représentées par leurs projections, mais les variables sont représentées par leurs corrélations (Abdi and Williams 2010).
+
+```{r}
+# Coordonnées des variables
+head(var$coord, 4)
+
+# Cercle de corrélation des variables
+fviz_pca_var(res.pca, col.var = "black")
+```
+
+_ Les variables positivement corrélées sont regroupées.
+
+_ Les variables négativement corrélées sont positionnées sur les côtés opposés de l’origine du graphique (quadrants opposés).
+
+_ La distance entre les variables et l’origine mesure la qualité de représentation des variables. Les variables qui sont loin de l’origine sont bien représentées par l’ACP
+
+#### Qualité de représentation
+
+La qualité de représentation des variables sur la carte de l’ACP s’appelle cos2 (cosinus carré) . 
+
+```{r}
+head(var$cos2, 4)
+
+# Visualisation du cos2 des variables sur toutes les dim
+corrplot(var$cos2, is.corr=FALSE)
+
+# Cos2 total des variables sur Dim.1 et Dim.2
+fviz_cos2(res.pca, choice = "var", axes = 1:5)
+```
+
+_ Un cos2 élevé indique une bonne représentation de la variable sur les axes principaux en considération. Dans ce cas, la variable est positionnée à proximité de la circonférence du cercle de corrélation.
+
+_ Un faible cos2 indique que la variable n’est pas parfaitement représentée par les axes principaux. Dans ce cas, la variable est proche du centre du cercle.
+
+#####En résumé
+_ Les valeurs de cos2 sont utilisées pour estimer la qualité de la représentation
+Plus une variable est proche du cercle de corrélation, meilleure est sa représentation sur la carte de l’ACP (et elle est plus importante pour interpréter les composantes principales en considération)
+
+_ Les variables qui sont proche du centre du graphique sont moins importantes pour les premières composantes.
+
+```{r}
+# Colorer en fonction du cos2: qualité de représentation
+fviz_pca_var(res.pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Évite le chevauchement de texte
+             )
+
+# Changer la transparence en fonction du cos2
+fviz_pca_var(res.pca, alpha.var = "cos2")
+```
+
+####Contributions des variables aux axes principaux
+
+```{r}
+# Contribution des variables
+head(var$contrib, 4)
+
+# Plus la valeur de la contribution est importante, plus la variable contribue à la composante principale en question.
+corrplot(var$contrib, is.corr=FALSE) 
+
+# Contributions des variables à PC1
+fviz_contrib(res.pca, choice = "var", axes = 1, top = 10)
+# Contributions des variables à PC2
+fviz_contrib(res.pca, choice = "var", axes = 2, top = 10)
+
+# Contribution totale à PC1 et PC2
+fviz_contrib(res.pca, choice = "var", axes = 1:2, top = 10)
+```
+
+La ligne en pointillé rouge, sur le graphique ci-dessus, indique la contribution moyenne attendue. Si la contribution des variables était uniforme, la valeur attendue serait 1/length(variables) = 1/10 = 10%. Pour une composante donnée, une variable avec une contribution supérieure à ce seuil pourrait être considérée comme importante pour contribuer à la composante.
+
+Notez que la contribution totale d’une variable donnée, pour expliquer la variance retenue par deux composantes principales, disons PC1 et PC2, est calculée comme 
+
+$contrib = \frac{(C_1 \times Eig_1) + (C_2 \times Eig_2)}{Eig_1 + Eig_2}$ , où
+
+$C_1$ et $C_2$ sont les contributions de la variable aux axes PC1 et PC2, respectivement
+$Eig_1$ et $Eig-2$ sont les valeurs propres de PC1 et PC2, respectivement. Rappelons que les valeurs propres mesurent la quantité de variation retenue par chaque PC.
+Dans ce cas, la contribution moyenne attendue (seuil) est calculée comme suit:
+
+Comme mentionné ci-dessus, si les contributions des 10 variables étaient uniformes, la contribution moyenne attendue pour une PC donnée serait 1/10 = 10%. La contribution moyenne attendue d’une variable pour PC1 et PC2 est: 
+
+$\frac{(10 \times Eig_1) + (10 \times Eig_2)}{Eig_1 + Eig_2}$
+
+```{r}
+# Mise en évidence des variables les + contributives aux axes
+fviz_pca_var(res.pca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07")
+             )
+
+# Changez la transparence en fonction de contrib
+fviz_pca_var(res.pca, alpha.var = "contrib")
+```
+
+###Description des dimensions
+
+```{r}
+res.desc <- dimdesc(res.pca, axes = c(1,2), proba = 0.05)
+# Description de la dimension 1
+res.desc$Dim.1
+
+# Description de la dimension 2
+res.desc$Dim.2
+```
+$quanti représente les résultats pour les variables quantitatives. Notez que les variables sont triées en fonction de la p-value de la corrélation.
+
+###Graphique des individus
+
+####Résultats sur les individus
+
+```{r}
+ind <- get_pca_ind(res.pca)
+ind
+
+# Coordonnées des individus
+head(ind$coord)
+# Qualité des individus
+head(ind$cos2)
+# Contributions des individus
+head(ind$contrib)
+```
+
+####Graphique: qualité et contribution
+
+```{r}
+# Graphe des individus
+fviz_pca_ind (res.pca)
+
+# Graphe des individus avec couleurs
+fviz_pca_ind (res.pca, col.ind = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Évite le chevauchement de texte
+             )
+
+# Graphe des individus avec taille des points en fonction du cos2 des individus
+fviz_pca_ind (res.pca, pointsize = "cos2",
+             pointshape = 21, fill = "#E7B800",
+             repel = TRUE # Évite le chevauchement de texte
+             )
+
+# bar plot de la qualité de représentation (cos2) des individus
+fviz_cos2(res.pca, choice = "ind")
+
+# Contribution totale sur PC1 et PC2
+fviz_contrib(res.pca, choice = "ind", axes = 1:5)
+```
+
+####Colorier par les individus par groupes
+
+#####Exemple avec les données Iris
+```{r}
+head(iris, 3)
+
+# La variable Species (index = 5) est supprimée
+# avant l'ACP
+iris.pca <- PCA(iris [, - 5], graph = FALSE)
+
+# Dans le code R ci-dessous: l’argument habillage ou col.ind peut être utilisé pour spécifier la variable à utiliser pour colorer les individus par groupes.
+# 
+# Pour ajouter une ellipse de concentration autour de chaque groupe, spécifiez l’argument addEllipses = TRUE. L’argument palette peut être utilisé pour changer les couleurs du groupe.
+
+fviz_pca_ind(iris.pca,
+             geom.ind = "point", # Montre les points seulement (mais pas le "text")
+             col.ind = iris$Species, # colorer by groups
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE, # Ellipses de concentration
+             legend.title = "Groups"
+             )
+
+
+# supprimer le point moyen des groupes (centre de gravité), spécifiez l’argument mean.point = FALSE.
+# 
+# ellipses de confiance au lieu des ellipses de concentration, utilisez ellipse.type = “confidence”.
+# Ajoutez des ellipses de confiance
+fviz_pca_ind(iris.pca, geom.ind = "point", col.ind = iris$Species, 
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE, ellipse.type = "confidence",
+             legend.title = "Groups"
+             )
+
+```

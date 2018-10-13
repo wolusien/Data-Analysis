@@ -1,0 +1,252 @@
+---
+title: "TP8 : Régression Logistique"
+author: "DJEBALI Wissam"
+date: "6 mars 2018"
+header-includes:
+   - \usepackage{bbm}
+   - \usepackage{enumitem}
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reshape2)
+library(questionr)
+library(effects)
+library(ROCR)
+```
+
+Packages : *ggplot2, reshape2, questionr, effects, ROCR*
+
+## Description
+
+https://www.listendata.com/2016/02/Logistic-Regression-with-R.html
+
+Méthode utilisée pour prédire le résultat d'une variable qualitative, type binaire (oui/non, malade/pas malade, etc.), qui dépend d'une ou plusieurs autres variables quantitatives qui sont indépendantes entre elles.  
+
+La régression logistique est basée sur l'estimation du maximum de vraisemblance ( **Maximum Likelihood(ML) Estimation** ) : qui veut que les coefficients $\beta_{i}$ devant les variables soient choisies de telle sorte qu'ils maximisent la probabilité de Y sachant $X=(X_{i})_{i=1,...,k}$ (maximum de vraisemblance). Lors de la recherche avec **ML**, l'ordinateur à travers différentes itérations essaye plusieurs solutions jusqu'à obtenir le maximum de vraisemblance. Le **score de Fisher (Fisher Scoring)** est la plus célébre des méthodes itératives pour estimer les paramètres de la régression.  
+
+$$logit(p)=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}+...+\beta_{k}X_{k}$$
+où $logit(p)=log_{e}(\frac{p}{1-p})$
+avec comme équation : $$p=\frac{1}{1+e^{-(\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}+...+\beta_{k}X_{k}})}$$
+$p$*: probabilité que la variable soit égale à "succès" ou à un "événement"* 
+
+### Indicateurs de Performance Importants
+
+1) **Pourcentage de Concordants(Percent of Concordant)**
+
+Pourcentage des paires où les observations avec la modalité désirée(l'événement désirée ;ex : malade, positif, spam...) ont une plus grande probabilité de prediction que les observations avec la modalité opposée (opposé de l'événement désiré; ex : non malade, négatifs, non spam)  
+
+_Règle_ : Plus le pourcentage de paires concordantes est élevé meilleur le modèle est adapté. Au delà de 80% le modèle est considéré comme un bon modèle. 
+
+2) **Pourcentage de Discordants(Percent Discordant)**
+
+Poourcentage de paires où les observations avec la modalité désirée ont une probabilté de prédiction plus petite que les observations avec la modalité opposée.
+
+3) **Pourcentage d'Ex aequo(Percent Tied)**
+
+Pourcentage de paires où les observations avec la modalité désirée ont la même probabilité que les observations avec la modalité opposée.
+
+4) **Aire sous la courbe ROC (Area under curve (c statistics))**
+
+Compris entre 0.5 et 1, où 0.5 correspond à un modèle qui prédit de façon aléatoire les réponses et 1 à un modèle qui prédit parfaitement les réponses.
+$$C=\text{Area under Curve}=\%concordant+(0.5\times \%tied)$$
+Le modèle sera jugé de :
+\begin{itemize}
+\item .90-1 = excellent (A)
+\item .80-.90 = bon (B)
+\item .70-.80 = équitable (normal ni trop bon ni trop mauvais) (C)
+\item .60-.70 = pauvre (D)
+\item .50-.60 = échec (E)
+\end{itemize}
+
+5) **Matrice de confusion [Classification Table (Confusion Matrix)] **
+
+**Sensitivité (Taux de Vrai Positifs)[Sensitivity (True Positive Rate)]** % des observations pour lesquelles on a prédit la modalité postive sachant que celle-ci est la modalité correct.
+\begin{align*}
+Sensitivity = \frac{VRAI POS}{VRAI POS + FAUX NEG}
+\end{align*}
+
+**Spécificité (Taux de Vrai Négatifs) [Specificity (True Negative Rate)]** 
+
+% des observations pour lesquelles on a prédit la modalité négative sachant que celle-ci est la modalité correct.
+\begin{align*}
+Spécificté = \frac{VRAI NEG}{VRAI NEG + FAUX POS}
+\end{align*}
+
+**Précision [Correct (Accuracy)]**=$\frac{\text{Nombre de prédiction correct (VRAI POS + VRAI NEG)}}{\text{Nombre d'observations de l'échantillon}}$
+
+“Cut-off” optimisé sur la base d’un compro-
+mis entre sensibilité et spécificité
+
+## Exemple : Données maladie cardiaque 
+
+```{r }
+#Read Data File
+maladcoeur <-read.delim("C:/Users/DJEBALI/Documents/M2_ISIFAR/Data_Mining/maladcoeur.txt")
+
+mydata<-maladcoeur[,-1] 
+
+#Summary
+summary(mydata)
+
+
+#Proportion de malade et non malade
+freq(mydata$chd)
+#ou en utilisant :
+table(mydata[,9])
+
+# Corrélation entre les variables
+cc=cor(mydata)
+
+#Affichage des correlation entre les variables avec la fonction melt
+melt(cc)
+```
+
+Il existe une forte corrélation positive entre les variables:  
+adiposity et obesity, adiposity et age.  
+On peut justifier la corrélation entre adiposity et obesity par le fait que l'obésity et du fait de l'accumulation de graisse dans le corp. 
+
+```r plot(mydata)```
+On constate qu'avec l'age le taux de graisse dans les cellules augmente.
+
+```{r }
+#Matrice de corrélation 
+cc.liste = melt(cc)
+
+# On doit changer le nom des étiquettes des variables pour avoir le graphe avec la corrélation
+names(cc.liste)=c("Variable_1","Variable_2","Correlation")
+
+#Permet un affichage des corrélations
+graph <- ggplot(cc.liste, aes(Variable_1, Variable_2, fill=Correlation)) + geom_tile(aes(fill=Correlation)) + scale_fill_continuous(low = "green",high= "steelblue" ,breaks=seq(-1,1,0.1)) 
+graph
+
+# Séparation des données en données d'apprentissage(training) (70%) et données test(validation) (30%)
+dt = sort(sample(nrow(mydata),nrow(mydata)*.7))
+train<-mydata[dt,]
+val<-mydata[-dt,] 
+
+# Vérification du nombre de ligne dans les données d'apprentissage et les données test
+nrow(train)
+nrow(val)
+
+#Execution de la Régression logistique
+mylogistic <- glm(chd ~ ., data = train, family = "binomial")
+summary(mylogistic)$coefficient
+```
+On regarde la p-value, si c'est <0.05 alors on rejette l'hypothèse de l'indépendance donc les variables sont liées. 
+
+```{r }
+#Stepwise Logistic Regression pour réduire le nb de variables dans le modèle
+mylogit = step(mylogistic)
+# On passe de 9 variables dans le modèle à 4 variables pour expliquer la variable chd
+
+ #Logistic Regression Coefficient
+summary.coeff0=summary(mylogit)$coefficient
+
+ #Calculating Odd Ratios
+OddRatio = exp(coef(mylogit))
+OddRatio
+```
+
+Odd Ratio du Tabac(Valeur exponentielle de l'estimation du Tabac)=1.09 se traduit par _*une augmentation d'une unité de consommation de tabac les chance d'être atteint d'une maladie cardiaque augmente d'un facteur de 1.09*_
+
+```{r fig2, fig.height = 10, fig.width = 10, fig.align = "center"}
+summary.coeff=cbind(Variable=row.names(summary.coeff0), OddRatio, summary.coeff0)
+row.names(summary.coeff) = NULL
+summary.coeff
+
+ #R Function : Standardized Coefficients
+stdz.coff <- function (regmodel) 
+{ b <- summary(regmodel)$coef[-1,1]
+  sx <- sapply(regmodel$model[-1], sd)
+  beta <-(3^(1/2))/pi * sx * b
+  return(beta)
+}
+
+std.Coeff = data.frame(Standardized.Coeff = stdz.coff(mylogit))
+std.Coeff = cbind(Variable=row.names(std.Coeff), std.Coeff)
+row.names(std.Coeff) = NULL
+
+ #Final Summary Report
+final = merge(summary.coeff, std.Coeff, by = "Variable", all.x = TRUE)
+
+final
+
+plot(mylogistic)
+
+#L'extension effects propose une représentation graphique résumant les 
+#effets de chaque variable du modèle
+plot(allEffects(mylogistic))
+
+```
+
+### Prediction
+
+
+On fait la prédiction sur l'échantillon test et par la suite verifier si notre réression est correcte.
+
+```{r }
+
+pred = predict(mylogit,val, type = "response")
+finaldata = cbind(val, pred)
+
+# Score de performance du model
+pred_val <-prediction(pred ,finaldata$chd)
+
+ # Maximum Accuracy and prob. cutoff against it
+acc.perf <- performance(pred_val, "acc")
+ind = which.max(slot(acc.perf,"y.values")[[1]])
+acc = slot(acc.perf,"y.values")[[1]][ind]
+cutoff = slot(acc.perf,"x.values")[[1]][ind]
+
+
+# Print Results
+print(c(accuracy= acc, cutoff = cutoff))
+
+```
+
+
+```{r }
+ # Calcul de l'Area under Curve AUC
+perf_val <- performance(pred_val,"auc")
+paste(perf_val@y.name,' : ' ,perf_val@y.values)
+```
+
+$AUC=0.74$ de ce fait on a un modèle équitable (normal ni trop bon ni trop mauvais) 
+
+```{r }
+ # Plotting Lift curve
+plot(performance(pred_val, measure="lift", x.measure="rpp"), colorize=TRUE)
+
+ # Affochage de la courbe ROC
+perf_val2 <- performance(pred_val, "tpr", "fpr")
+plot(perf_val2, col = "red", lwd = 2,xlab='Taux de faux positive (False positive rate)',ylab='Taux de Sensitivité(True Positive Rate)')
+abline(a=0,b=1,lwd=3,lty=2,col="gray")
+```
+
+**C'est une mèthode qui permet de comparer plusieurs mèthodes de classification binaire.**
+
+```{r }
+ #Calcule de la Statistique KS (KS statistics)
+ks1.tree <- max(attr(perf_val2, "y.values")[[1]] - (attr(perf_val2, "x.values")[[1]]))
+ks1.tree
+
+```
+
+**Comment interpréter ces indicateurs**  
+
+Un "bon" modèle doit présenter des valeurs faibles de taux d'erreur et de taux de faux positifs (proche de 0) ; des valeurs élevées de sensibilité,précision et spécificité (proche de 1).  
+
+Le taux d'erreur est un indicateur symétrique, il donne la même importance aux faux positifs (c) et aux faux négatifs (b).
+
+La sensibilité et la précision sont asymétriques, ils accordent un rôle particulier aux positifs.
+
+Enfin, en règle générale, lorsqu'on oriente l'apprentissage de manière à améliorer la sensibilité, on dégrade souvent la précision et la spécificité. Un modèle qui serait meilleur que les autres sur ces deux groupes de critères antinomiques est celui qu'il faut absolument retenir.
+
+### Amélioration du modèle 
+
+On peut utiliser la fonction *step* avec l'_**AIC**_ pour diminuer le nombre de variables dans le modèle et ainsi par la suite avoir en général de meilleurs résultats.
