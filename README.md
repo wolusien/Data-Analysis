@@ -1,2 +1,2 @@
 # Data-Analysis
-R-Python
+Data analysis algorithm in R and Python
