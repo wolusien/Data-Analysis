@@ -1,5 +1,5 @@
 ---
-title: 'TP1 : ACP'
+title: 'ACP Analyse en Composantes Principales : PCA (Principal Component Analysis)'
 author: "DJEBALI Wissam"
 date: "25 février 2018"
 output:
@@ -9,8 +9,8 @@ output:
 header-includes:
    - \usepackage[utf8]{inputenc}
 editor_options:
-  chunk_output_type: console
   
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ library("factoextra")
 library("corrplot")
 ```
 
-# ACP
+# ACP ou PCA
 
 **Packages R** : FactoMineR, factoextra, corrplot
 
@@ -36,7 +36,7 @@ _ d’identifier les variables corrélées
 ```{r}
 data(BigMac2003)
 mcdo<-BigMac2003
-
+write.csv(mcdo,"./BigMac2003.csv")
 # Visualisation des données
 head(mcdo)
 
@@ -53,7 +53,8 @@ Techniquement, l’approche consiste à transformer les données en soustrayant 
 
 La standardisation des données est une approche beaucoup utilisée dans le contexte de l’analyse des données d’expression de gènes avant les analyses de type PCA et de clustering.
 
-Lors de la normalisation des variables, les données peuvent être transformées comme suit: $\frac{x_{i}-mean(x)}{sd(x)}$ Où $mean(x)$ est la moyenne des valeurs de x, et $sd(x)$ est l’écart type (SD).
+Lors de la normalisation des variables, les données peuvent être transformées comme suit: $$z_{ij}=\frac{x_{ij}-mean(x_{j})}{sd(x_{j})}$$
+Où $mean(x_{j})=\bar{x}_{j}=\frac{1}{n}\sum^{n}_{i=1}x_{ij}$ est la moyenne des valeurs de la variable $x_{j}$, et $sd(x_j)=\sqrt{\frac{1}{n}\sum_{i=1}^{n}(x_{ij}-\bar{x}_{j})^{2}}$ est l’écart type (SD).
 
 La fonction scale() peut être utilisée pour normaliser les données.
 
