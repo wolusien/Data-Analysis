@@ -1,0 +1,752 @@
+---
+title: "R_Journey"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Conseil Important
+Pour obtenir de l'aide sur un packages, utiliser : *library(help=__package__)*
+
+## Data Pipelines(Pointless Programmation)
+```{r} 
+library(magrittr)
+```
+### Exercices
+#### Exercice 1 Mean of Positive Values
+```{r}
+rnorm(100) %>% ifelse(.>0,.,NA) %>% mean(., na.rm = TRUE)
+```
+
+#### Exercice 2 Root Mean Square Error
+```{r w1, cache=TRUE}
+d<-data.frame(t=0,y=rnorm(10))
+```
+```{r w2, dependson="w1"}
+d %$% c(sum((t-y)**2),1/nrow(.)) %>% (function(c){sqrt(c[1]*c[2])})
+```
+
+## Data Manipulation
+```{r, cache=TRUE}
+library(datasets)
+library(help = "datasets")
+library(ggplot2)
+data(cars)
+head(cars)
+cars %>% qplot(speed, dist, data = .)
+```
+
+Pour charger les packages
+```{r, cache=TRUE}
+library(mlbench)
+```
+
+Pour obtenir la description d'un package
+```{r, cache=TRUE}
+library(help = "mlbench")
+```
+
+```{r, cache=TRUE}
+cars %>% head(3)
+cars %>% tail(3)
+cars %>% summary
+data(iris)
+iris %>% summary
+```
+
+## Reading and Formatting Data
+En général, le code associé à ces tâches est mis dans un chunk avec l'option **_cache=TRUE_** afin de ne pas devoir à chaque fois recharger le code sauf en cas de modifications.  
+  
+  Autre façon, on peut sauvegarder les data sur R, sous forme de fichier **.rda** pour RData.  
+Ex : _**formatted_breast_cancer %>% save(file = "data/formatted-breast-cancer.rda")**_  
+On peut ensuite les charger à l'aide de : _**load("data/formatted-breast-cancer.rda")**_
+les données auront alors pour nom *formatted_breast_cancer*  
+  
+  Privilégiez la méthode avec les chunk et le cache
+### Examples of Reading and Formatting Datasets : Breast Cancer
+```{r, cache=TRUE}
+library(mlbench)
+data(BreastCancer)
+BreastCancer %>% head(3)
+```
+
+#### Pour lire des données à partir d'une URL
+```{r, cache=TRUE}
+data_url="http://tinyurl.com/kw4xtts"
+lines <- readLines(data_url)
+lines[1:5]
+```
+
+#### Pour écrire les données d'une data.frame sur un fichier csv
+```{r, cache=TRUE}
+setwd("~/Documents/R_trainning")
+writeLines(lines, con = "data/raw-breast-cancer.csv")
+```
+
+```{r, cache=TRUE}
+raw_breast_cancer <- read.csv("data/raw-breast-cancer.csv")
+raw_breast_cancer %>% head(3)
+
+raw_breast_cancer <- read.csv(data_url)
+raw_breast_cancer %>% head(3)
+
+raw_breast_cancer <- read.csv(data_url, header = FALSE)
+raw_breast_cancer %>% head(3)
+
+names(raw_breast_cancer) <- names(BreastCancer)
+raw_breast_cancer %>% head(3)
+
+raw_breast_cancer <- read.csv(data_url, header = FALSE, col.names = names(BreastCancer))
+raw_breast_cancer %>% head(3)
+
+formatted_breast_cancer <- raw_breast_cancer
+```
+
+Formatter les données de la variable Class
+```{r, cache=TRUE}
+map_class <- function(x) {
+    ifelse(x == 2, "bening",
+    ifelse(x == 4, "malignant",
+           NA))
+}
+mapped <- formatted_breast_cancer$Class %>% map_class
+mapped %>% table
+
+# Autre façon:
+map_class <- function(x) {
+    ifelse(x == 2, "bening", "malignant")
+}
+mapped <- formatted_breast_cancer$Class %>% map_class
+mapped %>% table
+formatted_breast_cancer$Class %>% unique
+```
+
+L'utilisation du __*ifelse*__ est assez contraignante, il ne doit y avoir uniquement que deux modalités (ex: maligne et bénine).  
+Une alternative à cela est l'utilisation d'un dictionnaire, pour créer un dictionnaire en R, on utilise les vecteurs
+
+```{r, cache=TRUE}
+dict <- c("2" = "benign", "4" = "malignant")
+map_class <- function(x) dict[as.character(x)]
+mapped <- formatted_breast_cancer$Class %>% map_class
+mapped %>% table
+mapped[1:5]
+```
+Les nombres ont éte mis entre "" afin que l'on est pas de problème lorsque l'on fait **_dict[2]_**.  
+Comme on peut le voir les étiquettes on pour nom un nombre, pour enlever les noms, on utilise **_uname()_**
+```{r, cache=TRUE}
+mapped %<>% unname
+mapped[1:5]
+```
+
+### Résumé 
+La lecture et le formattage entier des données peut se faire de cette forme
+```{r, cache=TRUE}
+read.csv(data_url, header = FALSE,
+         col.names = names(BreastCancer)) ->
+  raw_breast_cancer ->
+  formatted_breast_cancer
+dict <- c("2" = "benign", "4" = "malignant")
+map_class <- function(x) dict[as.character(x)]
+formatted_breast_cancer$Class <-formatted_breast_cancer$Class %>%map_class %>%unname %>%
+  factor(levels = c("benign", "malignant"))
+```
+Si l'on ne veut pas utiliser une fonction qu'on a créé pour mapper(formatter) les données pour ne pas s'encombrer, on peut utiliser les lamda expressions.
+```{r, cache=TRUE}
+raw_breast_cancer$Class %>%
+  { dict <- c("2" = "benign", "4" = "malignant")
+    dict[as.character(.)]
+  } %>%
+  unname %>%
+  factor(levels = c("benign", "malignant")) %>%
+  table
+```
+
+### Examples of Reading and Formatting Datasets : Boston Housing
+
+```{r, cache=TRUE}
+library(mlbench)
+data(BostonHousing)
+str(BostonHousing)
+data_url = "http://tinyurl.com/zq2u8vx"
+boston_housing <- read.table(data_url)
+str(boston_housing)
+```
+Si on observe les données importées de l'URL, on remarque que la variable chas devrait être un facteur et que toutes les autres variables devraient être numériques. On doit aussi renommer les colonnes.  
+Pour y remédier nous faisons:
+```{r, cache=TRUE}
+col_classes <- rep("numeric", length(BostonHousing))
+col_classes[which("chas" == names(BostonHousing))] <- "factor"
+boston_housing <- read.table(data_url,
+                             col.names = names(BostonHousing),
+                             colClasses = col_classes)
+str(boston_housing)
+```
+
+### The package readr 
+Le package readr contient des fonctions plus rapides que les fonctions fournis avec R pour la lecture de jeux de données.
+```{r, cache=TRUE}
+library(readr)
+setwd("~/Documents/R_trainning")
+raw_breast_cancer <- read_csv("data/raw-breast-cancer.csv")
+raw_breast_cancer %>% head(3)
+```
+Pour avoir le nom des colonnes, on peut faire:
+```{r, cache=TRUE}
+raw_breast_cancer <- read_csv("data/raw-breast-cancer.csv",
+                              col_names = names(BreastCancer))
+raw_breast_cancer %>% head(3)
+```
+
+## Manipulating Data with dplyr package
+Le package _**dplyr**_ fournit un certain nombre de fonctions très utiles pour manipuler les dataframes, en utilisant notamment les pipes. avec l'opérateur **%>%**, il est néanmoins conseiller d'importer aussi le package _**magrittr**_ afin d'avoir une meilleure utilisation des pipes 
+```{r, cache=TRUE}
+library(dplyr)
+library(magrittr)
+library(help = dplyr)
+iris %>% tbl_df # tbl_df est dépreciée, utilisée à la place tibble::as_tibble
+```
+
+### select(): Pick Selected Columns and Get Rid of the Rest
+La fonction **_select()_** sélectionne les colonnes d'une dataframe(jeu de données). C'est équivalent à indexer les colonnes dans les données.  
+On peut l'utiliser pour sélectionner une colonne uniquement:
+```{r, cache=TRUE}
+iris %>% as_tibble %>% select(Petal.Width) %>% head(3)
+```
+Ou sélectionner plusieurs colonnes :
+```{r, cache=TRUE}
+iris %>% as_tibble %>%  select(Sepal.Width, Petal.Length) %>% head(3)
+```
+sélectionner une gamme de colonnes:
+```{r, cache=TRUE}
+iris %>% as_tibble %>%  select(Sepal.Length:Petal.Length) %>% head(3)
+```
+
+La réelle utilité de la fonction **_select()_** est qu'elle ressemble au  **_SELECT_** des requêtes **_SQL_**.  
+Exemple :
+Pour sélectionner les colonnes qui commencent par le mot *Petal* ou qui se terminent par *Width* ...
+```{r, cache=TRUE}
+iris %>% as_tibble %>%  select(starts_with("Petal")) %>% head(3)
+iris %>% as_tibble %>%  select(ends_with("Width")) %>% head(3)
+iris %>% as_tibble %>%  select(contains("etal")) %>% head(3)
+```
+On peut utiliser la recherche de motif sur le noms des colonnes, en utilisant les expressions régulières :
+```{r, cache=TRUE}
+iris %>% as_tibble %>%  select(matches(".t.")) %>% head(3)
+```
+
+On peut aussi effacer des colonnes:
+```{r, cache=TRUE}
+iris %>% as_tibble %>%  select(-starts_with("Petal")) %>% head(3)
+```
+
+### mutate():Add Computed Values to Your Data Frame
+La fonction _**mutate()**_ permet d'ajouter des colonnes au jeu de données en spécifiant l'expression de comment sont créer ces colonnes, comme par exemple en sommant deux colonnes.  
+Voici un exemple d'ajout d'une colonne:
+```{r, cache=TRUE}
+iris %>% as_tibble %>%
+  mutate(Petal.Width.plus.Length = Petal.Width + Petal.Length) %>%
+  select(Species, Petal.Width.plus.Length) %>%  head(3)
+```
+On peut aussi ajouter plusieurs colonnes en une seule fois :
+```{r, cache=TRUE}
+iris %>% as_tibble %>%
+  mutate(Petal.Width.plus.Length = Petal.Width + Petal.Length,
+         Sepal.Width.plus.Length = Sepal.Width + Sepal.Length) %>%
+  select(Petal.Width.plus.Length, Sepal.Width.plus.Length) %>%  head(3)
+```
+
+Ou encore appeler plusieurs fois la fonction _**mutate()**_.
+
+### transmute(): Add Computed Values to Your Data Frame and Get Rid of All Other Columns
+_**transmute()**_ fonctionne de façon similaire à la fonction _**mutate()**_ combiné à _**select()**_, d'où le résultat est de cette fonction est une dataframe qui contient uniquement les nouvelles colonnes créées.
+
+```{r, cache=TRUE}
+my_data<-iris %>% as_tibble %>%
+  transmute(Petal.Width.plus.Length = Petal.Width + Petal.Length) %>% head(3)
+class(my_data)
+```
+
+### arrange(): Reorder Your Data Frame by Sorting Columns
+_**arrange()**_ permet de classer la dataframe en classant les colonnes selon ce dont l'on spécifie.
+```{r, cache=TRUE}
+iris %>% as_tibble %>% arrange(Sepal.Length) %>% head(3)
+```
+Par défaut, pour les valeurs numériques le classement se fait par ordre croissant. Pour changer l'ordre de classement, on utilise **_desc_** :
+```{r, cache=TRUE}
+iris %>% as_tibble %>%   arrange(desc(Sepal.Length)) %>%  head(3)
+```
+
+### filter(): Pick Selected Rows and Get Rid of the Rest
+_**arrange()**_ permet de filtrer les lignes selon une condition logique. On donne en paramètre de la fonction un prédicat précisant quelles lignes doivent être choisies.
+```{r, cache=TRUE}
+iris %>% as_tibble %>%
+  filter(Sepal.Length > 5) %>% head(3)
+
+# Autre exemple
+iris %>% as_tibble() %>%
+  filter(Sepal.Length > 5 & Species == "virginica") %>%
+  select(Species, Sepal.Length) %>% head(3)
+```
+
+### group_by(): Split Your Data Into Subtables Based on Column Values
+_**group_by()**_ permet de spécifier à **dplyr** que l'on veut travailler sur les données séparées en différents sous-ensemble. En elle-même la fonction n'est pas utile, elle permet juste de spécifier à **dplyr** que pour les futures opérations, il doit considérer différents sous-ensembles de données comme des jeux de données séparés.  
+L'intérêt de cette fonction vient lorsque l'on l'utilise avec la fonction _**summarize()**_ pour obtenir des statistiques synthétiques.
+On peut grouper par une ou plusieurs variables, il faut juste spécifier les colonnes par lesquelles on veut grouper comme des arguments séparés. Le groupement est efficace si les données sont autres que des nombres réels.
+```{r, cache=TRUE}
+iris %>% as_tibble %>% group_by(Species) %>% head(3)
+```
+Nous avons restructuré la data frame tel qu'ils y a des groupement, mais en attendant que l'on effectue de nouvelles opérations sur les données, il n'y a rien à constater de plus. Le réel intérêt est lorsque la fonction est associée à la fonction _**summarize()**_.
+
+### summarise/summarize(): Calculate Summary Statistics
+_**summarise**_ est utilisée pour générer des statistiques synthétiques à partir de la data frane. Elle permet d'obtenir différentes statistiques en choisissant la variable que l'on veut(même principe que les proc en SAS).  
+Exemple: 
+```{r, cache=TRUE}
+iris %>% summarise(Mean.Petal.Length = mean(Petal.Length),
+              Mean.Sepal.Length = mean(Sepal.Length))
+
+# Exemple avec group by
+iris %>%  group_by(Species) %>%
+  summarise(Mean.Petal.Length = mean(Petal.Length))
+```
+Voici une liste de fonctions utiles à utiliser avec _**summarise**_ :  
+* Center: _**mean()**_, _**median()**_,  
+* Spread: _**sd()**_ , _**IQR()**_, _**mad()**_,  
+* Range: _**min()**_, _**max()**_, _**quantile()**_,  
+* Position: _**first()**_, _**last()**_, _**nth()**_,  
+* Count: _**n()**_, _**n_distinct()**_,  
+* Logical: _**any()**_, _**all()**_
+
+```{r, cache=TRUE}
+iris %>% summarise(Observations = n())
+
+# Exemple avec group by
+iris %>% group_by(Species) %>% summarise(Number.Of.Species = n())
+```
+
+Enfin on peut combiner plusieurs statistiques comme ceci :
+```{r, cache=TRUE}
+iris %>%  group_by(Species) %>%
+  summarise(Number.Of.Samples = n(),
+              Mean.Petal.Length = mean(Petal.Length))
+```
+
+### Exemple Breast Cancer Data Manipulation
+```{r, cache=TRUE}
+formatted_breast_cancer <-
+  raw_breast_cancer %>%
+  mutate(
+    Class = Class %>% {c("2" = "benign", "4" = "malignant")[as.character(.)]} %>%
+    unname %>% factor(levels = c("benign", "malignant")) 
+  )
+
+format_class <- . %>% {
+  dict <- c("2" = "benign", "4" = "malignant")
+  dict[as.character(.)]
+} %>% unname %>% factor(levels = c("benign", "malignant"))
+
+formatted_breast_cancer <-
+  raw_breast_cancer %>% mutate(Class = format_class(Class))
+
+formatted_breast_cancer %>%
+  group_by(Class) %>%
+  summarise(mean.thickness = mean(Cl.thickness))
+
+formatted_breast_cancer %>%
+  group_by(Class) %>%
+  summarise(mean.size = mean(Cell.size))
+
+formatted_breast_cancer %>%
+  arrange(Cell.size) %>%
+  group_by(Cell.size, Class) %>%
+  summarise(ClassCount = n())
+
+formatted_breast_cancer %>%
+  group_by(Class, as.factor(Cell.size)) %>%
+  summarise(mean.thickness = mean(Cl.thickness))
+```
+
+## Tidying Data with tidyr
+Tidy data is a standard way of mapping the meaning of a dataset to its structure. A
+dataset is messy or tidy depending on how rows, columns, and tables are matched
+up with observations, variables, and types.  
+  
+  Peut se comprenrdre comme une façon efficace de résumer avec des statistiques synthétiques et des graphes les données.  
+  
+Pour cela on va se concentrer sur des colonnes en particulier dans notre dataframe
+```{r, cache=TRUE}
+library(tidyr)
+iris %>% select(Species, Petal.Length) %>% head(3)
+iris %>% select(Species, Petal.Length) %>%
+  qplot(Species, Petal.Length, geom = "boxplot", data = .)
+```
+
+### gather()
+La fonction _**gather**_ permet de fusionner des colonnes en lignes(voir aide). Dans l'exemple qui suit *Sepal.Length* et *Sepal.Width* sont devenus une seule et même ligne avec en début de ligne *Sepal.Length* et en fin de ligne *Sepal.Width*, cela ressemble à _**rbind**_
+```{r, cache=TRUE}
+g<-iris %>%
+  gather(key = Attribute, value = Measurement,
+         Sepal.Length, Sepal.Width) %>%
+  select(Species, Attribute, Measurement)
+g %>% head(3)
+
+
+
+iris %>%
+  gather(key = Attribute, value = Measurement,
+         Sepal.Length, Sepal.Width) %>%
+  select(Species, Attribute, Measurement) %>%
+  qplot(Attribute, Measurement,
+          geom = "boxplot",
+          facets = . ~ Species, data = .)
+```
+
+This code tells gather() to make a column called Attributes that contains the names of columns from
+the input data frame and another called Measurement that will contain the values of the key columns. From
+the resulting data frame, you can see that the Attribute column contains the Sepal.Length and Sepal.
+Width names (well, you can see it if you don’t run it through head(); in the output here you only see Sepal.
+Length), and another column that shows the Measurements.
+This transforms the data into a form where we can plot the attributes against measurements (see
+Figure 3-3 for the result).
+```{r, cache=TRUE}
+
+iris %>%
+  gather(key = Attribute, value = Measurement,
+         Sepal.Length, Sepal.Width) %>%
+  select(Species, Attribute, Measurement) %>%
+  qplot(Attribute, Measurement,
+          geom = "boxplot",
+          facets = . ~ Species, data = .)
+```
+
+## Exercices
+
+```{r cache=TRUE}
+my_data <- read_csv("data/Loan_payments.csv")
+my_data %>% as_tibble %>% head(3)
+my_data %>% as_tibble %>% select(Principal,age) %>% head(3) 
+my_data %>% as_tibble %>% arrange(age) %>% head(3)
+my_data %>% as_tibble %>% arrange(desc(age)) %>% head(3)
+my_data %>% as_tibble %>% filter(Principal>900 & age>40) %>% select(age, Principal) %>% head(3)
+my_data %>% group_by(Principal) %>% summarise(mean.age = mean(age))
+my_data %>% group_by(Principal) %>% summarise(count.age = n_distinct(age))
+my_data %>% gather(key = Attribute, value = Measurement,terms, age) %>% 
+  select(education, Attribute, Measurement) %>% 
+  qplot(Attribute, Measurement,geom = "boxplot",facets = .~education, data = .)
+```
+
+## Visualizing Data
+
+```{r cache=TRUE}
+longley %>% plot(Unemployed ~ Year, data = ., type = 'l')
+longley %>% lines(Armed.Forces ~ Year, data = ., col = "blue")
+
+longley %$% plot(Unemployed ~ Year, type = 'l',
+                 ylim = range(c(Unemployed, Armed.Forces)))
+longley %>% lines(Armed.Forces ~ Year, data = ., col = "blue")
+
+cars %>% plot(dist ~ speed, data = .)
+cars %>% lm(dist ~ speed, data = .) %>% abline(col = "red")
+
+shape_map <- c("setosa" = 1, "versicolor" = 2, "virginica" = 3)
+iris %$% plot(Petal.Length ~ Petal.Width, pch = shape_map[Species])
+```
+
+### The Grammar of Graphics and the ggplot2 Package
+
+```{r cache=TRUE}
+library(help = "ggplot2")
+```
+
+## Using qplot
+Cette fonction peut être utilisé pour faire de simples graphiques
+```{r cache=TRUE}
+cars %>% qplot(speed, dist, data = .)
+```
+
+L'avantage du package ggplot2 est que les graphique deviennent des objets que l'on peut modifier pour infine afficher :
+```{r cache=TRUE}
+p <- cars %>% qplot(speed, dist, data = .)
+p
+# est équivalent à 
+# p <- cars %>% qplot(speed, dist, data = .)
+# print(p)
+
+```
+Avec _**qplot**_ on peut obtenir un meilleur affichage plus simplement qu'avec la fonction _**plot**_. Pour colorer avec la fonction _**plot**_, il faut créer une fonction qui créer un vecteur de nombres correspondant à chaque étiquette d'espèce.  
+Avec _**qplot**_, on a juste besoin de spécifier que les couleurs dépendent de la colonne  de la variable *Species* 
+```{r cache=TRUE}
+iris %>% qplot(Petal.Width, Petal.Length ,
+               color = Species, data = .)
+```
+
+On peut utiliser _**qplot**_ pour tracer d'autres graphiques que des nuages de points. Par exemple si l'on donne en paramètre une seule variable, _**qplot**_ va alors comprendre qu'il faut tracer un histogramme: 
+```{r cache=TRUE}
+cars %>% qplot(speed, data = ., bins = 10)
+```
+Si on veut afficher la densité, il n'y a qu'à préciser que _**geom = density**_:
+```{r cache=TRUE}
+cars %>% qplot(speed, data=., geom = "density") + ggtitle("Density of car speed created using qplot (ggplot2)")
+```
+
+## Using Geometries
+Les géomètries permettent de préciser quels sont les types de graphiques souhaités, elles permettent aussi de superposer plusieurs graphes.  
+Pour créer un graphe avec des géomètries, on doit créer un objet ggplot, on doit assigner le paramètre *Speed* de la dataframe à l'axe *x* et le paramètre *dist* à l'axe des *y*, pour ensuite tracer les données comme des points.
+```{r cache=TRUE}
+ggplot(cars) + geom_point(aes(x = speed, y = dist))
+```
+
+Avec les données iris, on a l'équivalent du graphe effectué avec le _**qplot**_, en utilisant _**ggplot**_.
+```{r cache=TRUE}
+iris %>% ggplot + geom_point(aes(x = Petal.Width, y = Petal.Length, color = Species))
+
+iris %>% ggplot +
+  geom_point(aes(x = Petal.Width, y = Petal.Length), color = "red")
+```
+On peut construire les graphiques de densité et histogrammes aussi en utilisant ggplot2.
+```{r cache=TRUE}
+cars %>% ggplot + geom_histogram(aes(x = speed), bins = 10)
+cars %>% ggplot + geom_density(aes(x = speed))
+```
+On peut aussi combiner les deux graphes en un seul graphe, en les superposant:
+```{r cache=TRUE}
+cars %>% ggplot(aes(x = speed, y = ..count..)) +  geom_histogram(bins = 10) +   geom_density()
+```
+
+Autre exemple de superposition de graphique : nuage de points et droite linéaire, pour cela on précise que _**geo_smooth = lm**_, ce qui permet d'utiliser la méthode de régression linéaire:
+```{r cache=TRUE}
+cars %>% ggplot(aes(x = speed, y = dist)) +  geom_point() + geom_smooth(method = "lm")
+```
+Si on ne précise pas _**geo_smooth = lm**_, on n'utilisera pas la régression linéaire, on aura à place _**geo_smooth = loess**_.  
+**LOESS(Locally weighted Scatterplot Smoother )** est une méthode de régression non paramétrique fortement connexe qui combine plusieurs modèles de régression multiple au sein d'un méta-modèle qui repose sur la méthode des k plus proches voisins:
+```{r cache=TRUE}
+cars %>% ggplot(aes(x = speed, y = dist)) + geom_point() + geom_smooth()
+```
+On peut aussi utiliser d'autres fonctions comme _**geo_line*_
+```{r cache=TRUE}
+longley %>% ggplot(aes(x = Year)) +   geom_line(aes(y = Unemployed)) +   geom_line(aes(y = Armed.Forces), color = "blue")
+```
+On peut aussi combiner un graphe de point avec un graphe de droite, jouer sur la couleur ou avoir des graphes séparés:
+```{r cache=TRUE}
+longley %>% ggplot(aes(x = Year)) +
+  geom_point(aes(y = Unemployed)) +
+  geom_point(aes(y = Armed.Forces), color = "blue") +
+  geom_line(aes(y = Unemployed)) +
+  geom_line(aes(y = Armed.Forces), color = "blue")
+
+longley %>% gather(key, value, Unemployed, Armed.Forces) %>%
+  ggplot(aes(x = Year, y = value, color = key)) + geom_line()
+
+longley %>% gather(key, value, Unemployed, Armed.Forces) %>%
+  ggplot(aes(x = Year, y = value)) + geom_line() +
+  facet_grid(key ~ .)
+```
+
+### Facets
+Les Facets sont des sous-graphes pour mettre en évidence des sous-ensembles de données:
+```{r cache=TRUE}
+iris %>% gather(Measurement, Value, -Species) %>%  ggplot(aes(x = Species, y = Value)) +  geom_boxplot() +
+  facet_grid(Measurement ~ .)
+
+iris %>% gather(Measurement, Value, -Species) %>%  ggplot(aes(x = Species, y = Value)) +  geom_boxplot() +
+  facet_grid(Measurement ~ ., scale = "free_y")
+```
+On peut formatter le nom des étiquettes des sous-graphes, en utilisant la fonction ***labeller***, exemple avec le jeu de données ***Iris***, on veut effacer les points dans le nom des variables ***Petal.length***, ***Petal.Width***:
+```{r cache=TRUE}
+label_map <- c(Petal.Width = "Petal Width",
+               Petal.Length = "Petal Length",
+               Sepal.Width = "Sepal Width",
+               Sepal.Length = "Sepal Length")
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value)) +
+  geom_boxplot() +
+  facet_grid(Measurement ~ ., scale = "free_y",
+             labeller = labeller(Measurement = label_map))
+```
+
+### Scaling(dimensionnement)
+Pour spécifier les titres des axes, on utilise les fonctions ***scale_x_continuous*** et ***scale_y_continuous***, on aurait pu utiliser aussi ***xlab*** et ***ylab***
+```{r cache=TRUE}
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_point() + geom_smooth(method = "lm") +
+  scale_x_continuous("Speed") +
+  scale_y_continuous("Stopping Distance")
+
+longley %>% gather(key, value, Unemployed, Armed.Forces) %>%
+  ggplot(aes(x = Year, y = value)) + geom_line() +
+  scale_x_continuous(breaks = 1947:1962) +
+  facet_grid(key ~ .)
+```
+
+On peut aussi afficher le graphe de façon inverser, par ordre décroissant de graduation:
+```{r cache=TRUE}
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_point() + geom_smooth(method = "lm") +
+  scale_x_reverse("Speed") +
+  scale_y_continuous("Stopping Distance")
+```
+
+On peut aussi ajouter des nuages de points aux boxplot comme suit:
+```{r cache=TRUE}
+iris %>% ggplot(aes(x = Species, y = Petal.Length)) +
+  geom_boxplot() + geom_jitter(width = 0.1, height = 0.1)
+```
+
+On peut modifier les labels sur les axes x:
+```{r cache=TRUE}
+iris %>% ggplot(aes(x = Species, y = Petal.Length)) +
+  geom_boxplot() + geom_jitter(width = 0.1, height = 0.1) +
+  scale_x_discrete(labels = c("setosa" = "Setosa",
+                              "versicolor" = "Versicolor",
+                              "virginica" = "Virginica"))
+```
+On peut aussi colorier les diagrammes à moustache en fonction des étiquettes de la variable ***Species*** :
+```{r cache=TRUE}
+label_map <- c(Petal.Width = "Petal Width",
+               Petal.Length = "Petal Length",
+               Sepal.Width = "Sepal Width",
+               Sepal.Length = "Sepal Length")
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value, fill = Species)) +
+  geom_boxplot() +
+  facet_grid(Measurement ~ ., scale = "free_y",
+               labeller = labeller(Measurement = label_map))
+```
+
+Ou jouer sur le constraste du graphe en fonction des étiquettes de la variable ***Species*** :
+
+```{r cache=TRUE}
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value, fill = Species)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("red", "green", "blue")) +
+  facet_grid(Measurement ~ ., scale = "free_y",
+               labeller = labeller(Measurement = label_map))
+```
+
+### Themes and Other Graphics Transformations
+Dans cette section, nous allons voir comment changer l'affichage des graphiques
+
+Voici l'affichage sans utiliser de thème:
+```{r cache=TRUE}
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value, fill = Species)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("setosa" = "Setosa",
+                              "versicolor" = "Versicolor",
+                              "virginica" = "Virginica")) +
+  scale_fill_brewer(palette = "Greens") +
+  facet_grid(Measurement ~ ., switch = "y",
+             labeller = labeller(Measurement = label_map)) +
+  coord_flip()
+```
+
+Maintenant on affiche le même graphe en utilisant des thèmes, ce qui permet de positionner la légende, de choisir le fond
+```{r cache=TRUE}
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value, fill = Species)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("setosa" = "Setosa",
+                              "versicolor" = "Versicolor",
+                              "virginica" = "Virginica")) +
+  scale_fill_brewer(palette = "Greens") +
+  facet_grid(Measurement ~ ., switch = "y",
+             labeller = labeller(Measurement = label_map)) +
+  coord_flip() +
+  theme(strip.background = element_blank()) +
+  theme(legend.position="top")
+
+label_map <- c(Petal.Width = "Petal Width",
+               Petal.Length = "Petal Length",
+               Sepal.Width = "Sepal Width",
+               Sepal.Length = "Sepal Length")
+species_map <- c(setosa = "Setosa",
+                 versicolor = "Versicolor",
+                 virginica = "Virginica")
+iris %>% gather(Measurement, Value, -Species) %>%
+  ggplot(aes(x = Species, y = Value, fill = Species)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = species_map) +
+  scale_fill_brewer(palette = "Greens", labels = species_map) +
+  facet_grid(Measurement ~ ., switch = "y",
+             labeller = labeller(Measurement = label_map)) +
+  coord_flip() +
+  theme(strip.background = element_blank()) +
+  theme(legend.position="top")
+```
+
+### Figures with Multiple Plots
+
+On peut afficher deux graphes en 1 seul graphe en utilisant le package ***gridExtra***, avec la fonction ***grid.arrange()*** :
+```{r cache=TRUE}
+petal <- iris %>% ggplot() +
+  geom_point(aes(x = Petal.Width, y = Petal.Length,
+                   color = Species)) +
+  theme(legend.position="none")
+sepal <- iris %>% ggplot() +
+  geom_point(aes(x = Sepal.Width, y = Sepal.Length,
+                   color = Species)) +
+  theme(legend.position="none")
+
+library(gridExtra)
+grid.arrange(petal, sepal, ncol = 2)
+```
+
+Si on ne veut pas du thème, en utilisant le package ***cowplot*** on peut spécifier le thème :
+```{r cache=TRUE}
+library(cowplot)
+plot_grid(petal, sepal, labels = c("A", "B"))
+```
+
+## Working with Large Datasets
+
+Pour extraire des échantillons d'un jeu de données, on a le package ***dplyr***.  
+Pour sélectionner n ligne d'un jeu de données afin de construire un échantillon, on peut faire comme ci-dessous :
+```{r cache=TRUE}
+library(dplyr)
+iris %>% sample_n(size = 5)
+```
+
+Pour sélectionner un sous jeu de données, on peut utiliser la fonction _**sample_frac**_, l'attribut size permet de spécifier la fraction que les lignes doivent vérifier, exemple si _**size = 0.2**_ et que le jeu de données contient 150 lignes, alors seront sélectionnées les lignes telles que _**n/150 = 0.2**_
+```{r cache=TRUE}
+iris %>% sample_frac(size = 0.01)
+```
+
+On peut mesurer aussi la consommation de RAM, avec le package ***pryr*** :
+```{r cache=TRUE}
+library(pryr)
+mem_change(x <- rnorm(10000))
+```
+
+### Too Large to Plot
+En utilisant l'affichage standard, on obtient ceci:
+```{r cache=TRUE}
+d <- data.frame(x = rnorm(10000), y = rnorm(10000))
+d %>% ggplot(aes(x = x, y = y)) +
+  geom_point()
+```
+
+On peut utiliser le contraste pour foncer ou éclaircir certains points:
+```{r cache=TRUE}
+d %>% ggplot(aes(x = x, y = y)) +
+  geom_point(alpha = 0.2)
+```
+
+On peut aussi se contenter d'afficher la densité
+```{r cache=TRUE}
+d %>% ggplot(aes(x = x, y = y)) +
+  geom_density_2d()
+```
+
+#### Hex Figure
+On peut afficher la densité en utilisant des figures hexagonal pour tracer les histogrammes au lieu des carrés ou barres classiques
+```{r cache=TRUE}
+d %>% ggplot(aes(x = x, y = y)) +
+  geom_hex()
+```
+
+On peut aussi combiner les deux densité sous forme de courbe et sous forme d'histogramme dans un même graphe qui est plus intéressant que les deux graphes seuls:
+```{r cache=TRUE}
+d %>% ggplot(aes(x = x, y = y)) + geom_hex() +  scale_fill_gradient(low = "lightgray", high = "red") +
+  geom_density2d(color = "black")
+```
+
