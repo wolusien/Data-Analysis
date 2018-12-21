@@ -1,0 +1,9 @@
+R packages :
+install.packages(c("rmarkdown","markdown","knitr"))
+install.packages("magrittr")
+install.packages(c("ggplot2", "gridExtra", "cowplot", "hexbin))
+install.packages("mlbench")
+install.packages("readr")
+install.packages(c("dplyr","tidyr"))
+install.packages(c("pryr","biglm", "ff", "ffbase"))
+install.packages(c("ade4","FactoMineR"))
