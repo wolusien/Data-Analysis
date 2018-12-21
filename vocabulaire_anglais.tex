@@ -1,0 +1,88 @@
+\documentclass[french]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper]{geometry}
+\usepackage{babel}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{amsmath} 
+\usepackage{amssymb}  
+\usepackage{gensymb}
+\newcommand*{\norme}[1]{\left\lVert{#1}\right\rVert}
+
+\definecolor{blue}{RGB}{51,131,255}
+\title{Vocabulaire anglais}
+\author{DJEBALI Wissam}
+\begin{document}
+	\maketitle
+	
+\begin{itemize}[label=\textbullet]
+	\item \textbf{nested} = niché
+	\item \textbf{cumbersome} = encombrant 
+	\item \textbf{alleviate} = soulager
+	\item \textbf{readily} = facilement
+	\item \textbf{sift} = tamiser
+	\item \textbf{overwhelming} = écrasant, accablant, irrésistible, insurmontable
+	\item \textbf{partly} = en partie, partiellement
+	\item \textbf{boundary} = limite
+	\item \textbf{surrogate} = substitut, remplaçant
+	\item \textbf{crude} = brut, grossier
+	\item \textbf{Recall} = \textbf{Sensitivity}
+	\item \textbf{False-Discovery Rate FDR} = \textbf{1-Precision}
+	\item \textbf{goodness-of-fit} = qualité de l'ajustement
+	\item \textbf{overfitting} = surraprentissage
+	\item \textbf{sparsity} = parcimonieux, rare
+	\item \textbf{be plagued} = en proie
+	\item \textbf{Voronoi tesselation} = pavage de Voronoi
+	\item \textbf{tile} = tuile
+	\item \textbf{non overlapping} = non chevauchant
+	\item \textbf{stringent} = rigoureux, sévère, strict
+	\item \textbf{handful} = poignée, quarteron
+	\item \textbf{wiggly} = sinueux
+	\item \textbf{mild} = doux, léger, faible
+	\item \textbf{palatable} = appétent, savoureux
+	\item \textbf{entail} = entraîner, comporter
+	\item \textbf{recipe} = recette
+	\item \textbf{batch} = lot
+	\item  \textbf{least squares} = méthodes des moindres carrés
+	\item \textbf{cross-entropy} = entropie croisée \textbf{(voir log-vraisemblance)}
+	\item \textbf{conversely} = inversement, réciproquement
+	\item \textbf{curse of dimensionality} = malédiction de la dimensionnalité : Plus on a de variables plus on a besoin d'avoir un échantillon de grande taille pour assurer la pertinence ou la significativité de l’information que l’on peut lire des données. 
+	\item \textbf{hone} = affiner, aiguiser, affûter
+	\item \textbf{binning} = \textbf{bucketing} = regrouper en groupes des valeurs
+	\item \textbf{etangled} = enchevêtré
+	\item \textbf{depth} = profondeur
+	\item \textbf{bears consideration} = mérite qu'on s'y attarde
+	\item \textbf{manifold} = multiple, multitude
+	\item \textbf{embed} = intégrer, encastrer
+	\item \textbf{knot} = noeud
+	\item \textbf{singular matrix} = matrice non inversible(déterminant égale à 0)	\\
+\end{itemize}
+
+\section{Vocabulaire Topologie}
+\begin{itemize}[label=\textbullet, font=\LARGE \color{blue}]
+	\item \textbf{manifold} = variété : Une \textbf{variété de dimension} $\bm{n}$, où $\bm{n}$ désigne un entier naturel, est un espace topologique localement euclidien, c'est-à-dire dans lequel tout point appartient à une région qui s'apparente à un tel espace. \\
+	
+	\item \textbf{homeomorphism} = homéomorphisme : En topologie, un homéomorphisme est une application bijective continue, d'un espace topologique dans un autre, dont la bijection réciproque est continue. Dans ce cas, les deux espaces topologiques sont dits homéomorphes.\\\\	
+	\textbf{La notion d'homéomorphisme est la bonne notion pour dire que deux espaces topologiques sont « le même » vu différemment. C'est la raison pour laquelle les homéomorphismes sont les isomorphismes de la catégorie des espaces topologiques}.\\
+	
+	\item \textbf{homotopy} = homotopie :
+	L'homotopie est une notion de topologie algébrique. Elle formalise la notion de déformation continue d'un objet à un autre. Deux lacets sont dits homotopes lorsqu'il est possible de passer continument de l'un à l'autre. Ce concept se généralise à bien d'autres objets que des lacets.\\
+	
+	\item \textbf{isotopy} = isotopie : L’isotopie est un raffinement de l'homotopie ; dans le cas où les deux applications continues $\bm{f,g : X \rightarrow Y}$ sont des \textbf{\textit{homéomorphismes}}, on peut vouloir passer de $\bm{f}$ à $\bm{g}$ non seulement continûment mais en plus par homéomorphismes.\\
+	
+	On dira donc que $\bm{f}$ et $\bm{g}$ sont isotopes s’il existe une application continue $\bm{H : X \times [0, 1] \rightarrow Y}$ telle que :
+	\begin{itemize}[label=$\star$]
+		\item $\bm{\forall x \in X, H(x, 0)=f(x)}$
+		\item $\bm{\forall x \in X, H(x, 1)=g(x)}$
+		\item \textit{pour tout }$t\in[0,1]$, l'application $\bm{X \rightarrow Y, x \mapsto H(x,t)}$ est un homéomorphisme\\
+	\end{itemize}
+	
+	\item \textbf{\textit{ambient isotopy}} : \\ Formally, an \textbf{\textit{ambient isotopy}} between \textbf{\textit{manifolds}} $\bm{A}$ and $\bm{B}$ is a continuous function $\bm{F:[0,1]\times X\rightarrow Y}$ such that each $\bm{F_{t}}$ is a homeomorphism from $\bm{X}$ to its range, $\bm{F_{0}}$ is the identity function, and $\bm{F_{1}}$ maps $\bm{A}$ to $\bm{B}$. That is, $\bm{F_{t}}$ continuously transitions from mapping $\bm{A}$ to itself to mapping  $\bm{A}$ to $\bm{B}$.\\ \\
+	\textbf{\textit{isotopie ambiante}} :\\ 
+	Une variante est la notion d'\textbf{\textit{isotopie ambiante}}, qui est une sorte de déformation continue de l'« espace ambiant », transformant progressivement un sous-espace en un autre : deux plongements $\bm{\alpha}$, $\bm{\beta}$ d'un espace $\bm{Z}$ dans un espace $\bm{X}$ sont dits « isotopes de manière ambiante » s'ils se prolongent en deux homéomorphismes $\bm{f, g}$ de $\bm{X}$ dans lui-même isotopes (au sens précédent) ou, ce qui est équivalent, s'il existe une isotopie entre l'identité de $\bm{X}$ et un homéomorphisme $\bm{h}$ de $\bm{X}$ dans lui-même tel que $\bm{h \circ \alpha=\beta}$. Cette notion est importante en théorie des nœuds : deux nœuds sont dits équivalents s'ils sont reliés par une isotopie ambiante.\\
+	
+\end{itemize}
+\end{document}
