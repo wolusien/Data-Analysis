@@ -19,6 +19,20 @@
     \begin{document}	
     \maketitle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+	\section{Traiter les valeurs manquantes(à compléter)}
+	\subsection{Variables quantitatives}
+Deux solutions existent pour traiter les valeurs manquantes : 
+	\begin{itemize}[label=\textbullet, font=\LARGE \color{orange}]
+		\item Supprimer les individus avec des valeurs manquantes
+		\item Remplacer les valeurs manquantes par d'autres valeurs. Il faut alors veiller à ne pas modifier la distribution de la variable en question, conserver le plus de propriétés de celle-ci.
+		\begin{itemize}[label=*]
+			\item On peut remplacer les valeurs manquantes par la médiane, la moyenne(déconseillée) ou d'autre valeurs
+			\item On peut aussi utiliser des algorithmes afin de remplacer ses valeurs manquantes de façon plus judicieuses, ces algorithmes sont appelés \textbf{Algorithm for Impute Values}
+		\end{itemize}
+	\end{itemize}
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 	\section{Cross Validation}
@@ -134,12 +148,14 @@ Combinaison des fonction de \textbf{la Régression Ridge} et de la \textbf{Régr
 		
 		\item \textbf{Distance chi-deux}
 		$$\bm{d(x_{1},x_{2})=\sqrt{\sum_{j=1}^{n}\frac{1}{f_{n}}(f_{1j}-f_{2j})^{2}}}$$
-		avec $f_{ij}$ proportion par individu et $f_{j}$ proportion moyenne pour la variable j.
+		avec $f_{ij}$ proportion par individu et $f_{j}$ proportion moyenne pour la variable j.\\
 		
 		\item \textbf{Distance de Manhattan(ou distance City-Block ou Taxi-Distance)}
 		$$\bm{d(x_{1},x_{2})=\sum_{j=1}^{n}|x_{1j}-x_{2j}|}$$
-		Par rapport à la distance euclidienne usuelle, qui utilise le carré des écarts, on utilisera
-		notamment cette mesure pour minimiser l’influence des grands écarts.
+		Par rapport à la distance euclidienne usuelle, qui utilise le carré des écarts, on utilisera notamment cette mesure pour minimiser l’influence des grands écarts.\\
+		
+		\item \textbf{Distance de Gower} = métrique utilisée dans le Clustering pour des
+jeux de données mixtes (contenant des variables quantitatives et qualitatives). Permet de faire d'utiliser des Clustering prenant à la fois en compte les données quantitatives et qualitatives(\textit{cf Kmodes})
 	\end{itemize}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,6 +264,98 @@ Un bon modèle aura généralement un \textbf{biais de prédiction} voisin de z�
 			\right.
 			$$
 	\end{itemize}
+
+\newpage
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+\section{Clustering (à compléter)}
+	
+	Avant de faire un Clustering, on effectue une PCA ou une MCA ou autre pour examiner les corrélations entre les variables et avoir une meilleur représentation des données dans un nouveau repères composé de nouveaux axes(à expliciter). Les variables contribue plus ou moins aux axes \textit{(cf variance expliquée)}.Les individus après utilisation des algorithmes d'analyses des correspondances ont de nouvelles coordonnées dans des nouveaux axes générés par cette analyse. Après choix du nombre de nouveaux axes à garder dans le nouveau repère \textit{(cf variance expliquée)}, on utilise les nouvelles coordonnées des individus au algorithmes.\\
+
+\subsection{Algorithme de Clustering}
+	\begin{itemize}[label = \textbullet, font=\LARGE \color{purple}]
+	\item PAM(Partitionning around medoïds)	
+	\item DBSCAN
+	\item HDBSCAN(Hierarchical DBSCAN)
+	\item KModes
+	\item KMedoïds
+	\item Hierarchical Clustering
+	\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\section{Mesures de performances}
+	\subsection{Régression}
+	
+	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
+		\item \textbf{RMSE(Root Mean Square Error)}
+		$$\bm{RMSE(X,h)=\sqrt{\frac{1}{m}\sum_{i=1}^{m}(h(x^{(i)})-y^{(i)})^{2}}}$$
+		\begin{itemize}[label=\textbullet]
+			\item $\bm{m}$ est la taille de l'échantillon pour lequel on mesure la RMSE.\\\\
+			Par exemple,pour le jeu de donnée California Housing(Prédiction du prix des maisons en Californie par district), si on évalue la RMSE pour un échantillon de validation avec 2 000 districts donc 2 000 observations, alors $\bm{m=2 000}$.
+			
+			\item $\bm{x^{(i)}}$ est un vecteur de toutes les valeurs des features(variables) pour l'observation \textbf{ième} dans le jeu de donnée. $\bm{y^{(i)}}$ est le label de l'observation \textbf{ième}(c'est la valeur qu'on souhaite prédire).\\\\
+			Par exemple, si le premier district dans le jeu de donnée localisé à -118.29$\degree$ en longitude et 33.91$\degree$ en latitude et qui compte 1 146 habitants, un revenu median de \$38 372 et un prix médian des maisons à \$156 400 alors on a :
+			$$\bm{x^{(1)}}=\left( \begin{array}{c}
+			-118.29 \\
+			33.91 \\
+			1.416 \\
+			38.372
+			\end{array} \right)$$
+			et
+			$$\bm{y^{(1)}}=156,400$$
+			
+			\item \textbf{X} est la matrice qui représente le jeu de données entier en excluant la variable à prédire $y$
+			
+			\item $\bm{h}$ est la fonction du modèle utilisé pour la prédiction, aussi appelé \textbf{hypothesis}. Quand on fournit au modèle l'observation $\bm{x^{(i)}}$, il prédit la valeur $$\bm{\hat{y}^{(i)}}=h(x^{(i)})$$
+			et la vraie valeur est $\bm{y^{i}}$, l'error de prédiction est donc $$\bm{\hat{y}^{(i)}-y^{i}}$$
+			
+			\item RMSE(\textbf{X},$h$) est la fonction de coût liée à la fonction $\bm{h}$ du modèle.\\\\
+	\end{itemize}	
+		Une mesure de performance typique pour les cas de problèmes de régression est la Root Mean Square Error (RMSE). Elle mesure la déviation standard de l'erreur que le modèle commet lors de sa prédiction. Par exemple, pour le jeu de donnée California Housing(Prédiction du prix des maisons en Californie), la RMSE vaut 50 000 ce qui veut dire qu'environ 68\% des prédictions du modèle auront un écart \$50,000 avec la valeur actuelle de la maison, et environ 95\% des prédictions auront un écart \$100,000 avec la valeur actuelle.\\\\\\
+		
+		\item \textbf{MAE(Mean Absolute Error)}
+		$$\bm{MAE(X,h)=\frac{1}{m}\sum_{i=1}^{m}|h(x^{(i)})-y^{(i)}|}$$
+		
+		\textbf{RMSE} et \textbf{MAE} sont tous les deux des façons de mesurerla distance entre deux vecteurs : le vecteur de prediction et le vecteur des vraies valeurs. \\\\
+		\end{itemize}
+		Plus on utilise des normes grandes, plus ces mesures de distance se concentre sur les grandes valeurs et négligent les petites valeurs. \\C'est ainsi que \textbf{RMSE (norme $L_{2}$)} est plus sensible aux valeurs extrêmes (outliers) que \textbf{MAE (norme $L_{1}$)}. Par contre lorsque ces valeurs extrêmes(extrêma) sont exponentiellement rares(comme dans le cas de courbe en forme de cloche), la RMSE est une excellente mesure et est généralement préférée.
+		
+	\subsection{Classification}
+	
+	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
+		\item $\bm{F_{\beta}}$ \textbf{score} :
+			$$\bm{F_{\beta}=(1+\beta^{2})\times \frac{Precision\times Rappel}{Precision+Rappel}}$$
+			En général, on utilise le $\bm{F_{1}}$ \textbf{score}:
+			$$\bm{F_{1}=2\times\frac{Precision\times Rappel}{Precision + Rappel}}$$
+		\item \textbf{AUC(Area Under the ROC Curve)}\\\\ Cette valeur mesure l'intégralité de l'aire à deux dimensions située sous l'ensemble de la courbe ROC (par calculs d'intégrales) de (0,0) à (1,1).\\L'AUC fournit une mesure agrégée des performances pour tous les seuils de classification possibles. On peut interpréter l'AUC comme une mesure de la probabilité pour que le modèle classe un exemple positif aléatoire au-dessus d'un exemple négatif aléatoire. Les valeurs d'AUC sont comprises dans une plage de 0 à 1. Un modèle dont 100 \% des prédictions sont erronées a un AUC de 0,0. Si toutes ses prédictions sont correctes, son AUC est de 1,0.\\\\
+		L'AUC présente les avantages suivants :
+		\begin{itemize}[label=\textbullet]
+			\item L'AUC est \textbf{invariante d'échelle}. Elle mesure la qualité du classement des prédictions, plutôt que leurs valeurs absolues.
+			\item L'AUC est \textbf{indépendante des seuils de classification}. Elle mesure la qualité des précisions du modèle quel que soit le seuil de classification sélectionné.\\
+		\end{itemize}
+		L'AUC présente les limites suivantes :
+		\begin{itemize}[label=\textbullet]
+			\item \textbf{L'invariance d'échelle n'est pas toujours souhaitable}. Par exemple, nous avons parfois besoin d'obtenir des probabilités précisément calibrées, ce que l'AUC ne permet pas de déterminer.
+			\item \textbf{L'indépendance vis-à-vis des seuils de classification n'est pas toujours souhaitable}. Lorsque des disparités importantes de coût existent entre les faux négatifs et les faux positifs, il peut être essentiel de minimiser l'un des types d'erreur de classification. Par exemple, dans un contexte de détection de spam il sera probablement préférable de minimiser en priorité les faux positifs (même si cela entraîne une augmentation significative des faux négatifs). L'AUC n'est pas un critère à retenir pour ce type d'optimisation.
+		\end{itemize}
+	\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\section{Algorithme de résolution de problème min et max de la fonction de coût et la pénalisation}
+	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
+	\item \textbf{GD(Gradient Descent)}\\\\
+	(à compléter)\\
+	\item \textbf{SGD(Stochastic Gradient Descent)}\\\\
+	(à compléter)\\
+    \item \textbf{FTRL(Follow The Regularized Leader)}\\\\
+    Algorithme basé sur l'algorithme de \textbf{Gradient Descent}, les modèles linéaires de grande dimension tirent parti de l'utilisation d'une variante de l'optimisation basée sur le gradient, appelée FTRL. \\
+    L'avantage de cet algorithme est de permettre une mise à l'échelle du taux d'apprentissage qui diffère en fonction du coefficient, ce qui peut se révéler particulièrement utile si certaines caractéristiques utilisent rarement des valeurs non nulles (il est aussi parfaitement adapté à la régularisation L1).
+    \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -381,77 +489,7 @@ Softmax suppose que chaque exemple appartient exactement à une classe. Cependan
 	\item Vous devez vous appuyer sur les régressions logistiques.\\
 \end{itemize}
 Par exemple, supposons que vos exemples sont des images contenant exactement un élément : un fruit. \textbf{Softmax} peut déterminer la probabilité que cet élément soit une poire, une orange, une pomme, etc. Si vos exemples sont des images contenant toute sorte de choses (des saladiers contenant plusieurs types de fruits), alors vous devrez utiliser plusieurs régressions logistiques.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-	\section{Mesures de performances}
-	\subsection{Régression}
-	
-	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
-		\item \textbf{RMSE(Root Mean Square Error)}
-		$$\bm{RMSE(X,h)=\sqrt{\frac{1}{m}\sum_{i=1}^{m}(h(x^{(i)})-y^{(i)})^{2}}}$$
-		\begin{itemize}[label=\textbullet]
-			\item $\bm{m}$ est la taille de l'échantillon pour lequel on mesure la RMSE.\\\\
-			Par exemple,pour le jeu de donnée California Housing(Prédiction du prix des maisons en Californie par district), si on évalue la RMSE pour un échantillon de validation avec 2 000 districts donc 2 000 observations, alors $\bm{m=2 000}$.
-			
-			\item $\bm{x^{(i)}}$ est un vecteur de toutes les valeurs des features(variables) pour l'observation \textbf{ième} dans le jeu de donnée. $\bm{y^{(i)}}$ est le label de l'observation \textbf{ième}(c'est la valeur qu'on souhaite prédire).\\\\
-			Par exemple, si le premier district dans le jeu de donnée localisé à -118.29$\degree$ en longitude et 33.91$\degree$ en latitude et qui compte 1 146 habitants, un revenu median de \$38 372 et un prix médian des maisons à \$156 400 alors on a :
-			$$\bm{x^{(1)}}=\left( \begin{array}{c}
-			-118.29 \\
-			33.91 \\
-			1.416 \\
-			38.372
-			\end{array} \right)$$
-			et
-			$$\bm{y^{(1)}}=156,400$$
-			
-			\item \textbf{X} est la matrice qui représente le jeu de données entier en excluant la variable à prédire $y$
-			
-			\item $\bm{h}$ est la fonction du modèle utilisé pour la prédiction, aussi appelé \textbf{hypothesis}. Quand on fournit au modèle l'observation $\bm{x^{(i)}}$, il prédit la valeur $$\bm{\hat{y}^{(i)}}=h(x^{(i)})$$
-			et la vraie valeur est $\bm{y^{i}}$, l'error de prédiction est donc $$\bm{\hat{y}^{(i)}-y^{i}}$$
-			
-			\item RMSE(\textbf{X},$h$) est la fonction de coût liée à la fonction $\bm{h}$ du modèle.\\\\
-	\end{itemize}	
-		Une mesure de performance typique pour les cas de problèmes de régression est la Root Mean Square Error (RMSE). Elle mesure la déviation standard de l'erreur que le modèle commet lors de sa prédiction. Par exemple, pour le jeu de donnée California Housing(Prédiction du prix des maisons en Californie), la RMSE vaut 50 000 ce qui veut dire qu'environ 68\% des prédictions du modèle auront un écart \$50,000 avec la valeur actuelle de la maison, et environ 95\% des prédictions auront un écart \$100,000 avec la valeur actuelle.\\\\\\
-		
-		\item \textbf{MAE(Mean Absolute Error)}
-		$$\bm{MAE(X,h)=\frac{1}{m}\sum_{i=1}^{m}|h(x^{(i)})-y^{(i)}|}$$
-		
-		\textbf{RMSE} et \textbf{MAE} sont tous les deux des façons de mesurerla distance entre deux vecteurs : le vecteur de prediction et le vecteur des vraies valeurs. \\\\
-		\end{itemize}
-		Plus on utilise des normes grandes, plus ces mesures de distance se concentre sur les grandes valeurs et négligent les petites valeurs. \\C'est ainsi que \textbf{RMSE (norme $L_{2}$)} est plus sensible aux valeurs extrêmes (outliers) que \textbf{MAE (norme $L_{1}$)}. Par contre lorsque ces valeurs extrêmes(extrêma) sont exponentiellement rares(comme dans le cas de courbe en forme de cloche), la RMSE est une excellente mesure et est généralement préférée.
-		
-	\subsection{Classification}
-	
-	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
-		\item $\bm{F_{\beta}}$ \textbf{score} :
-			$$\bm{F_{\beta}=(1+\beta^{2})\times \frac{Precision\times Rappel}{Precision+Rappel}}$$
-			En général, on utilise le $\bm{F_{1}}$ \textbf{score}:
-			$$\bm{F_{1}=2\times\frac{Precision\times Rappel}{Precision + Rappel}}$$
-		\item \textbf{AUC(Area Under the ROC Curve)}\\\\ Cette valeur mesure l'intégralité de l'aire à deux dimensions située sous l'ensemble de la courbe ROC (par calculs d'intégrales) de (0,0) à (1,1).\\L'AUC fournit une mesure agrégée des performances pour tous les seuils de classification possibles. On peut interpréter l'AUC comme une mesure de la probabilité pour que le modèle classe un exemple positif aléatoire au-dessus d'un exemple négatif aléatoire. Les valeurs d'AUC sont comprises dans une plage de 0 à 1. Un modèle dont 100 \% des prédictions sont erronées a un AUC de 0,0. Si toutes ses prédictions sont correctes, son AUC est de 1,0.\\\\
-		L'AUC présente les avantages suivants :
-		\begin{itemize}[label=\textbullet]
-			\item L'AUC est \textbf{invariante d'échelle}. Elle mesure la qualité du classement des prédictions, plutôt que leurs valeurs absolues.
-			\item L'AUC est \textbf{indépendante des seuils de classification}. Elle mesure la qualité des précisions du modèle quel que soit le seuil de classification sélectionné.\\
-		\end{itemize}
-		L'AUC présente les limites suivantes :
-		\begin{itemize}[label=\textbullet]
-			\item \textbf{L'invariance d'échelle n'est pas toujours souhaitable}. Par exemple, nous avons parfois besoin d'obtenir des probabilités précisément calibrées, ce que l'AUC ne permet pas de déterminer.
-			\item \textbf{L'indépendance vis-à-vis des seuils de classification n'est pas toujours souhaitable}. Lorsque des disparités importantes de coût existent entre les faux négatifs et les faux positifs, il peut être essentiel de minimiser l'un des types d'erreur de classification. Par exemple, dans un contexte de détection de spam il sera probablement préférable de minimiser en priorité les faux positifs (même si cela entraîne une augmentation significative des faux négatifs). L'AUC n'est pas un critère à retenir pour ce type d'optimisation.
-		\end{itemize}
-	\end{itemize}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-	\section{Algorithme de résolution de problème min et max de la fonction de coût et la pénalisation}
-	\begin{itemize}[label=\textbullet, font=\LARGE \color{red}]
-	\item \textbf{GD(Gradient Descent)}\\\\
-	(à compléter)\\
-	\item \textbf{SGD(Stochastic Gradient Descent)}\\\\
-	(à compléter)\\
-    \item \textbf{FTRL(Follow The Regularized Leader)}\\\\
-    Algorithme basé sur l'algorithme de \textbf{Gradient Descent}, les modèles linéaires de grande dimension tirent parti de l'utilisation d'une variante de l'optimisation basée sur le gradient, appelée FTRL. \\
-    L'avantage de cet algorithme est de permettre une mise à l'échelle du taux d'apprentissage qui diffère en fonction du coefficient, ce qui peut se révéler particulièrement utile si certaines caractéristiques utilisent rarement des valeurs non nulles (il est aussi parfaitement adapté à la régularisation L1).
-    \end{itemize}
+
+
     \end{document}
     
