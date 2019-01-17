@@ -69,6 +69,7 @@
 	\item \textbf{sink} = évier, lavabo
 	\item \textbf{spool} = bobine, rouleau
 	\item \textbf{caveat} = mise en garde, réserve, avertissement
+	\item \textbf{plummeting} = Chute spéctaculaire
 	\\
 \end{itemize}
 
@@ -113,5 +114,13 @@
 	\item \textbf{Fan out} = \textbf{\textit{Fan out}} is the term for delivering events from one source to multiple channels, so they reach multiple sinks.
 	\item \textbf{RDBMS(Relational Database Management System)} = \textbf{Système de gestion de base de données relationelle}
 	\item \textbf{JDBC(Java Database Connectivity}) = Interface de programmation pour les programmes utilisant la plateforme Java. Elle permet aux applications Java d'accéder par le biais d'une interface commune à des sources de données pour lesquelles il existe des pilotes JDBC. Normalement, il s'agit d'une base de données relationnelle, et des pilotes JDBC sont disponibles pour tous les systèmes connus de bases de données relationnelles. 
-	\end{itemize}
+	\item \textbf{RDD(Resilient Distributed Datasets)} =  Les RDDs sont tolérants à la panne et proposent des structures de données parallèles qui laissent les utilisateurs :
+		\begin{itemize}
+    		\item persister explicitement les données intermédiaires en mémoire,
+    		\item controller leur partitionnement afin d’optimiser l’emplacement des données,
+    		\item manipuler les données en utilisant un ensemble important d’opérateurs.
+		\end{itemize}
+		RDDs fournit, pour sa part, une interface basée sur des transformations “grosses mailles” (ie. map, filter et join) qui appliquent les mêmes opérations aux données. Cela permet d’être résiliant à la panne en loggant les transformations utilisées pour construire l’ensemble de données plutôt que les données réelles. Si une partition de RDD est perdue, le RDD dispose de suffisament d’informations sur la manière dont il a été produit pour recalculer la partition manquante. Ainsi les données perdues peuvent être récupérées souvent rapidement sans avoir à recourir aux mécanismes de réplication souvent couteux.
+\item \textbf{Staged Event-Driven Architecture (SEDA)} 		
+\end{itemize}
 \end{document}
